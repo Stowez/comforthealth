@@ -1,0 +1,66 @@
+.contact {
+	
+	article.fullwidth {
+		text-align: left;	
+		width: 100%;
+	}
+	h2 {
+		text-align: left;
+		padding: 0 2rem;
+	}
+
+	input, textarea {
+		width: 100%;
+		font-size: 1.6rem;
+		padding: .5rem;
+		border: 1px solid #f1f1f1;
+	}
+
+	li {
+		margin-bottom: 2rem;
+		width: 50%;
+		float: left;
+		padding: 0 2rem;
+
+		&:last-of-type {
+			width: 100%;
+			float: none;
+		}
+	}
+	
+	.gfield_error input, .gfield_error textarea  {
+		border: 1px solid #ad2525;
+	}
+	.gform_body {
+		overflow: hidden;
+	}
+
+	.gform_ajax_spinner_1, #gform_ajax_spinner_1 {
+		position: absolute;
+		margin-left: -25px;
+		margin-top: 10px;
+	}
+
+	label {
+		font-size: 1.4rem;
+		color: #979797;
+		text-align: left;
+		margin-bottom: 0.5rem;
+		display: block;
+	}
+
+	button, input[type="submit"] {
+		width: 200px;
+		padding: 1rem;
+		background: $pri;
+		border: 1px solid #fff;
+		color: #fff;
+		outline: 1px solid $pri;
+	}
+
+	.gform_footer {
+		padding: 0 2rem;
+		text-align: right;
+		position: relative;
+	}
+}
