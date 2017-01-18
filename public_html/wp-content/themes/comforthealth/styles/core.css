@@ -1390,6 +1390,243 @@ img {
   text-align: center;
 }
 
+/* line 1, ../scss/components/_gallery-block.scss */
+.grid {
+  position: relative;
+  margin: 0 auto;
+}
+
+/* line 6, ../scss/components/_gallery-block.scss */
+.js .grid::after {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  background: #252323 url(../img/loading.svg) no-repeat 50% 75px;
+  background-size: 60px auto;
+  -webkit-transition: opacity 0.3s;
+  transition: opacity 0.3s;
+}
+
+/* line 20, ../scss/components/_gallery-block.scss */
+.js .grid--loaded::after {
+  opacity: 0;
+}
+
+/* line 24, ../scss/components/_gallery-block.scss */
+.grid__item {
+  width: 270px;
+  padding: 10px;
+}
+
+/* line 29, ../scss/components/_gallery-block.scss */
+.grid__item--current {
+  opacity: 0 !important;
+}
+
+/* line 33, ../scss/components/_gallery-block.scss */
+.img-wrap {
+  display: block;
+}
+
+/* line 37, ../scss/components/_gallery-block.scss */
+.img-wrap:focus,
+.img-wrap:hover {
+  outline: none;
+}
+
+/* line 42, ../scss/components/_gallery-block.scss */
+.img-wrap img {
+  display: block;
+  max-width: 100%;
+}
+
+/* line 47, ../scss/components/_gallery-block.scss */
+.preview {
+  position: fixed;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  display: -webkit-flex;
+  display: -ms-flex;
+  display: flex;
+  -ms-flex-pack: center;
+  -webkit-justify-content: center;
+  justify-content: center;
+  -ms-flex-line-pack: center;
+  -webkit-align-content: center;
+  align-content: center;
+  -ms-flex-align: center;
+  -webkit-align-items: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* line 69, ../scss/components/_gallery-block.scss */
+.preview--open {
+  pointer-events: auto;
+}
+
+/* circle overlay (generated SVG) */
+/* line 76, ../scss/components/_gallery-block.scss */
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
+/* line 83, ../scss/components/_gallery-block.scss */
+.overlay circle {
+  -webkit-transition: fill-opacity 0.3s, -webkit-transform 0s 0.3s;
+  transition: fill-opacity 0.3s, transform 0s 0.3s;
+  -webkit-transition-timing-function: ease-out;
+  transition-timing-function: ease-out;
+  -webkit-transform: scale3d(0, 0, 1);
+  transform: scale3d(0, 0, 1);
+  fill: #1f1d1d;
+  fill-opacity: 0;
+}
+
+/* line 94, ../scss/components/_gallery-block.scss */
+.preview--open .overlay circle {
+  -webkit-transition: -webkit-transform 0.4s;
+  transition: transform 0.4s;
+  -webkit-transform: scale3d(1, 1, 1);
+  transform: scale3d(1, 1, 1);
+  fill-opacity: 1;
+}
+
+/* line 102, ../scss/components/_gallery-block.scss */
+.clone {
+  position: fixed;
+  z-index: 110;
+  -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.5, 1, 0.2, 1);
+  transition: transform 0.6s cubic-bezier(0.5, 1, 0.2, 1);
+  -webkit-backface-visibility: hidden;
+}
+
+/* line 110, ../scss/components/_gallery-block.scss */
+.original {
+  position: relative;
+  z-index: 120;
+  display: block;
+  object-fit: contain;
+  -webkit-transition: opacity 0.2s;
+  transition: opacity 0.2s;
+  -webkit-backface-visibility: hidden;
+}
+
+/* line 120, ../scss/components/_gallery-block.scss */
+.preview--open .animate {
+  /* open */
+  -webkit-transition: -webkit-transform 0.6s, opacity 0.2s;
+  transition: transform 0.6s, opacity 0.2s;
+}
+
+/* line 126, ../scss/components/_gallery-block.scss */
+.animate {
+  /* close */
+  -webkit-transition: -webkit-transform 0.3s, opacity 0.2s;
+  transition: transform 0.3s, opacity 0.2s;
+}
+
+/* line 132, ../scss/components/_gallery-block.scss */
+.description {
+  color: #fff;
+}
+
+/* line 136, ../scss/components/_gallery-block.scss */
+.js .description--grid {
+  display: none;
+}
+
+/* line 140, ../scss/components/_gallery-block.scss */
+.description--preview {
+  position: fixed;
+  z-index: 140;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  padding: 2em 1em;
+  text-align: center;
+  opacity: 0;
+  background: linear-gradient(180deg, transparent, #1f1d1d);
+  -webkit-transition: opacity 0.3s, -webkit-transform 0.3s;
+  transition: opacity 0.3s, transform 0.3s;
+  -webkit-transform: translate3d(0, 100%, 0);
+  transform: translate3d(0, 100%, 0);
+}
+
+/* line 156, ../scss/components/_gallery-block.scss */
+.preview--open .description--preview {
+  opacity: 1;
+  -webkit-transition-delay: 0.2s;
+  transition-delay: 0.2s;
+  -webkit-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+}
+
+/* Close button */
+/* line 167, ../scss/components/_gallery-block.scss */
+.action {
+  font-size: 1.5em;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  vertical-align: top;
+  color: #1c8d83;
+  border: none;
+  background: none;
+}
+
+/* line 178, ../scss/components/_gallery-block.scss */
+.action:hover,
+.action:focus {
+  color: #1c8d83;
+  outline: none;
+}
+
+/* line 184, ../scss/components/_gallery-block.scss */
+.action--close {
+  position: fixed;
+  z-index: 150;
+  top: 15px;
+  right: 15px;
+  padding: 1rem;
+  opacity: 0;
+  -webkit-transition: opacity 0.3s, -webkit-transform 0.3s;
+  transition: opacity 0.3s, transform 0.3s;
+  -webkit-transform: scale3d(0.6, 0.6, 1);
+  transform: scale3d(0.6, 0.6, 1);
+  content: "\f057";
+  font-family: FontAwesome;
+  color: #fff;
+  font-size: 4rem;
+}
+
+/* line 201, ../scss/components/_gallery-block.scss */
+.preview--image-loaded .action--close {
+  opacity: 1;
+  -webkit-transform: scale3d(1, 1, 1);
+  transform: scale3d(1, 1, 1);
+}
+
+/* line 207, ../scss/components/_gallery-block.scss */
+.text-hidden {
+  position: absolute;
+  display: block;
+  overflow: hidden;
+  width: 0;
+  height: 0;
+  color: transparent;
+}
+
 /* line 1, ../scss/components/_footer.scss */
 .footerNav {
   background: #3E3E3E;
