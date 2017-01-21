@@ -128,9 +128,9 @@
 				ul {
 					display: none;
 					position: absolute;
-					top: 25px;
+					top: 55px;
 					width: auto;
-					padding-top: 25px;
+					padding-top: 5px;
 
 					li {
 						display: block;
@@ -151,9 +151,9 @@
 				}
 
 				&.current_page_item {
-					a {
+					> a {
 						position: relative;
-
+						color: $pri;
 						&:after {
 							content:"";
 							width: 100%;
@@ -179,9 +179,11 @@
 							}
 						}
 					}
+				}
 
-					a {
-						color: $pri;
+				ul.sub-menu li.current_page_item a {
+					&:after, &:before {
+						display: none !important;
 					}
 				}
 
