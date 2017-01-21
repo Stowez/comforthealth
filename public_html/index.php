@@ -2,7 +2,6 @@
 <html>
 <head>
 	<title>Comforthealth.co.uk | Your new health and rehab clinic coming to Clifton, Bristol</title>
-	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width">
 	<script src="https://use.fontawesome.com/3931bddda4.js"></script>
 	<link rel="stylesheet" type="text/css" href="style.css?v=2">
