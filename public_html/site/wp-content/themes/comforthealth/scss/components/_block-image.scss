@@ -1,12 +1,13 @@
 .block-image {
-    height: 50vw;
-    max-height: 640px;
+    // height: 50vw;
+    // max-height: 640px;
     overflow: hidden;
     padding: 0;
     position: relative;
     background: #333332;
-    min-height: 350px;
-
+    min-height: 50vh;
+    flex-wrap: wrap;
+    
     @media only screen and (max-width: 700px)  {
         display: block;
         max-height: none;
@@ -28,16 +29,19 @@
         }
     }
     .half-block {
+
         position: relative;
-    	flex: 1;
+    	 flex: 1 0 auto;
+        width: 50%;
         align-items: center;
-        
+        flex-direction: column;
     
         &.with-content {
             padding: 30px;
             @media only screen and (max-width: 700px)  {
                 display: block;
                 // position: absolute;
+                width: 100%;
                 z-index: 50
                 
             }
@@ -88,6 +92,7 @@
         }
 
     	&.with-image {
+            transition: all .5s ease;
             height: 100%;
     		background-size: cover;
     		background-position: 50%;
@@ -95,4 +100,12 @@
             filter: grayscale(1); /* Microsoft Edge and Firefox 35+ */
     	}
     }
+
+      &:hover {
+        .half-block.with-image {
+            filter: none; /* IE6-9 */
+            filter: grayscale(0); /* Microsoft Edge and Firefox 35+ */
+        }
+    }
+
 }
