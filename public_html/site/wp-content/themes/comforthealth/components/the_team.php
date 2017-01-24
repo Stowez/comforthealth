@@ -5,6 +5,9 @@
 		while (have_rows('team_members')) : the_row();?>
 			<? $image = get_sub_field('profile_picture') ?>
 			<div class="col-4 team-member">
+				<? if (get_sub_field('page_link')) :?>
+					<a href="<?the_permalink();?>" class="pageLink"></a>
+				<?endif;?>
 				<div class="profile-picture" style="background-image:url('<?= $image['url']; ?>'"></div>
 				<div class="about-member">
 					<h3><? the_sub_field('name')?></h3>
