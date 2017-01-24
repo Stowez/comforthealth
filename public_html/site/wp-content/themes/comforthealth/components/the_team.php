@@ -8,8 +8,12 @@
 				<div class="profile-picture" style="background-image:url('<?= $image['url']; ?>'"></div>
 				<div class="about-member">
 					<h3><? the_sub_field('name')?></h3>
-					<span><? the_sub_field('position');?> Physiotherapist</span>
-					<? the_sub_field('profile')?>
+					<?if (get_sub_field('position')) :?>
+						<span><? the_sub_field('position');?></span>
+					<?endif;?>
+					<?if (get_sub_field('profile')) :?>
+						<? the_sub_field('profile')?>
+					<?endif;?>
 					<?if (get_sub_field('telephone')) :?>
 						<a href="tel:<? the_sub_field('telephone')?>" class="tel"><i class="fa fa-phone"></i> <? the_sub_field('telephone')?></a>
 					<?endif;?>
