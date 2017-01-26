@@ -3,6 +3,9 @@
 
 	.row {
 		display: flex;
+		@media only screen and (max-width: 710px)  {
+			display: block;
+		}
 	}
 	.team-member {
 
@@ -13,6 +16,11 @@
 		// padding: 2rem;
 		margin: 25px ;
 		flex: 1 auto;
+
+		@media only screen and (max-width: 710px)  {
+			flex: none;
+			margin: 25px 0;
+		}
 
 		a.pageLink {
 			position: absolute;
@@ -42,9 +50,10 @@
 	}
 
 	.profile-picture {
-		height: 250px;
+		height: 300px;
 		background-size: cover;
 		border-right: 1px solid #fff;
+		background-position: 50%;
 	}
 
 	.about-member {
