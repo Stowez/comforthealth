@@ -19,7 +19,7 @@
 
 		@media only screen and (max-width: 710px)  {
 			flex: none;
-			margin: 25px 0;
+			margin: 25px auto;
 		}
 
 		a.pageLink {
@@ -45,6 +45,10 @@
 				width: 1px;
 				right: -25px;
 				content:"";
+				@media only screen and (max-width: 710px)  {
+					display: none;
+				}
+
 			}
 		}
 	}
