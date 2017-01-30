@@ -24,8 +24,12 @@ $( document ).ready(function() {
 	}
 
 
-	if ($('section').first().hasClass('clean--header')) {
+	if ($('section').first().hasClass('clean--header') ) {
 		$('section').first().css('margin-top', '75px');
+		$('.navigation').addClass('noscroll')
+	}
+
+	if ( $('body').hasClass('blog') || $('body').hasClass('single-post') ) {
 		$('.navigation').addClass('noscroll')
 	}
 

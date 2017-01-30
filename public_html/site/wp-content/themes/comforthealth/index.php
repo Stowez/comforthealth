@@ -35,7 +35,7 @@
 					<figure class="blog__figure" style="background-image: url('<? the_post_thumbnail_url('large'); ?>') ">
 						<?$cats = get_the_category();?>
 						<? foreach ($cats as $cat):?>
-							<a href="<?= $cat->slug; ?>" class="cat-tags"><?= $cat->name; ?></a>
+							<a href="#" class="cat-tags"><?= $cat->name; ?></a>
 						<?endforeach;?>
 					</figure>
 					<div class="blog__content">

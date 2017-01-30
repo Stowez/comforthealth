@@ -8,6 +8,16 @@
     min-height: 50vh;
     
 
+    &:nth-of-type(2n) {
+        background: #fff;
+
+        .half-block.with-content {
+            p {
+                color: #333;
+            }
+        }
+    }
+
     &.flexWrap{
         flex-wrap: wrap;
     }
