@@ -436,7 +436,7 @@
                             "collapsed": "",
                             "min": "",
                             "max": "",
-                            "layout": "block",
+                            "layout": "table",
                             "button_label": "Add Member",
                             "sub_fields": [
                                 {
@@ -917,6 +917,40 @@
                     ],
                     "min": "",
                     "max": ""
+                },
+                {
+                    "key": "589b8d987526c",
+                    "name": "make_a_booking",
+                    "label": "Make a Booking",
+                    "display": "block",
+                    "sub_fields": [
+                        {
+                            "key": "field_589b8e5f05e22",
+                            "label": "Background Image",
+                            "name": "background_image",
+                            "type": "image",
+                            "instructions": "",
+                            "required": "",
+                            "conditional_logic": "",
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "return_format": "url",
+                            "preview_size": "thumbnail",
+                            "library": "all",
+                            "min_width": "",
+                            "min_height": "",
+                            "min_size": "",
+                            "max_width": "",
+                            "max_height": "",
+                            "max_size": "",
+                            "mime_types": ""
+                        }
+                    ],
+                    "min": "",
+                    "max": ""
                 }
             ]
         }
@@ -945,5 +979,5 @@
     "hide_on_screen": "",
     "active": 1,
     "description": "",
-    "modified": 1485257149
+    "modified": 1486589552
 }
