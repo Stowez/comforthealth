@@ -16,6 +16,12 @@
                 color: #333;
             }
         }
+
+         &:after {
+            @media only screen and (max-width: 700px)  {
+                //background: rgba(255, 255, 255, 0.85);
+            }
+        }
     }
 
     &.flexWrap{
@@ -99,6 +105,10 @@
             @media only screen and (max-width: 880px)  {
                 font-size: 3rem;
             }
+            @media only screen and (max-width: 700px)  {
+                font-size: 2.4rem;
+                line-height: 3rem;
+            }
             &:after {
                 bottom: 0;
                 content: "";
@@ -116,7 +126,9 @@
             // line-height: 3.4rem;
             margin-bottom: 3rem;
             color: #fff;
-
+            @media only screen and (max-width: 700px)  {
+                color: #fff !important;
+            }
             a {
                 color: $pri;
                 text-decoration: none;

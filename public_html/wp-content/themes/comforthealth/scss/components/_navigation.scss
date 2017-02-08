@@ -3,7 +3,7 @@
 	// border-bottom: 1px solid #fff;
 	width: 100%;
 	position: fixed;
-	z-index: 100;
+	z-index: 9000;
 	top: 0;
 	left: 0;
 	transition: all 0.15s ease;
@@ -11,7 +11,7 @@
 	#navicon {
 		float: right;
 		font-size: 1.5rem;
-		color: #333;
+		color: #fff;
 		position: relative;
 		top: -2rem;
 		text-decoration: none;
@@ -27,6 +27,10 @@
 
 
 	&.scrolled, &.noscroll {
+		#navicon {
+			color: #333;
+		}
+
 		background: #fff;
 		box-shadow: 0 1px 4px  rgba(0,0,0,0.25);
 		h1 {

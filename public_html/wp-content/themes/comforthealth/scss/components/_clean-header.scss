@@ -8,11 +8,21 @@
 			line-height: 3.5rem;
 			// text-align: center;
 		}
+		@media only screen and (max-width: 700px)  {
+			font-size: 2.4rem;
+			line-height: 3rem;
+			text-align: center;
+		}
 	}
 
 	#breadcrumbs {
 		position: static;
 		float: right;
+		@media only screen and (max-width: 700px)  {
+	    position: absolute;
+    	top: 20px;
+    	right: 20px;
+	}
 	}
 }
 
@@ -28,8 +38,8 @@
 		float: none;
 		position: static;
 		margin-bottom: 2rem;
-
 	}
+	
 	a {
 		color: $pri;
 		margin: 0 15px;
