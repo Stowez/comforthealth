@@ -31,9 +31,9 @@
 <nav class="navigation">
 	<div class="container">
 		<div class="flexWrap">
-			<a href="/"><h1>
+			<a href="/" class="headerLogo">
 				Comforthealth.co.uk
-			</h1></a>
+			</a>
 			<a href="#menu" id="navicon">Menu <i class="fa fa-bars"></i></a>
 			<? wp_nav_menu(array('menu' => '2')); ?>		 
 		</div>
