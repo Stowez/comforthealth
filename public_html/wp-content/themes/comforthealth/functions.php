@@ -17,6 +17,10 @@ function register_my_menu() {
 }
 add_action( 'init', 'register_my_menu' );
 
+function comforthealth_setup(){
+        add_theme_support( 'title-tag' );
+}
+add_action( 'after_setup_theme', 'comforthealth_setup' );
 
 
 /**

@@ -1,6 +1,6 @@
 <section class="the-team">
 	<div class="container">
-	<div class="row">
+	<div class="row justify-content-center">
 	<?if( have_rows('team_members') ):
 		while (have_rows('team_members')) : the_row();?>
 			<? $image = get_sub_field('profile_picture') ?>
