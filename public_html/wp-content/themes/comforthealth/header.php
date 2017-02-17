@@ -31,9 +31,16 @@
 <nav class="navigation">
 	<div class="container">
 		<div class="flexWrap">
-			<a href="/"><h1>
-				Comforthealth.co.uk
-			</h1></a>
+			<?if (is_front_page() ) :?>
+				<h1 class="headerLogo"><a href="/" >
+					Comfort Health - Clifton
+				</a></h1>
+			<?else :?>
+				<a href="/" class="headerLogo">
+					Comfort Health - Clifton
+				</a>
+			<?endif;?>
+
 			<a href="#menu" id="navicon">Menu <i class="fa fa-bars"></i></a>
 			<? wp_nav_menu(array('menu' => '2')); ?>		 
 		</div>
