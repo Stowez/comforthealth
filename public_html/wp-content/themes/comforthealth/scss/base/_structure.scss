@@ -69,6 +69,7 @@ img {
 
 .col-6 {
 	width: 50%;
+	max-width: 50%;
 }
 
 .row {
@@ -77,10 +78,12 @@ img {
 
 .col-3 {
 	width: 25%;
+	max-width: 25%;
 }
 
 .col-4 {
 	width: 33%;
+	max-width: 33%;
 	@media only screen and (max-width: 710px)  {
 		display: block;
 		width: 100%;
@@ -90,6 +93,10 @@ img {
 	}
 }
 
+
+.justify-content-center {
+	justify-content: center;
+}
 
 .col-padding {
 	padding: 25px;
