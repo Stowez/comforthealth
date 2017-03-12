@@ -16,7 +16,7 @@ get_header();
 								<nav>
 								<?$cats = get_the_category();?>
 								<? foreach ($cats as $cat):?>
-									<a href="<?= $cat->slug; ?>" class="cat-tags"><?= $cat->name; ?></a>
+									<a href="#<?= $cat->slug; ?>" class="cat-tags"><?= $cat->name; ?></a>
 								<?endforeach;?>
 								</nav>
 								<h1 class="banner__title"><a href="<? the_permalink(); ?>"><? the_title(); ?></a></h1>
