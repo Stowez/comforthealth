@@ -46,3 +46,10 @@
 		</div>
 	</div>
 </nav>
+
+
+<div class="social-icons">
+	<a href="https://www.facebook.com/ComfortHealthClifton/" target="_blank" class=""><i class="fa fa-facebook-official"></i></a>
+	<a href="https://www.facebook.com/ComfortHealthClifton/" target="_blank" class=""><i class="fa fa-twitter-square"></i></a>
+	<a href="https://www.facebook.com/ComfortHealthClifton/" target="_blank" class=""><i class="fa fa-instagram"></i></a>
+</div>
