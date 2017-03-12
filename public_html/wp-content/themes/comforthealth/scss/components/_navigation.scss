@@ -244,3 +244,19 @@
 // 		}
 // 	}
 // }
+
+.social-icons {
+	z-index: 9999;
+	position: fixed;
+	top: 50%;
+	right: 5px;
+	margin-top: -35px;
+	a {
+		margin-bottom: 5px;
+		display: block;
+		width: 21px;
+		font-size: 2.5rem;
+		height: 24px;
+		color: $pri;
+	}
+}
