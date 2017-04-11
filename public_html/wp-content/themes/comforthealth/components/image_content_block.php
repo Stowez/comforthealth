@@ -1,5 +1,7 @@
 <section class="block-image image-<? the_sub_field('image_position'); ?> flexWrap">
 	<?
+
+	// $image = get_sub_field('background_image'); print_r($image); 
 	if ( get_sub_field('image_position') == 'left' ) :?>
 		<div class="half-block with-image"  style="background-image:url('<? the_sub_field('background_image'); ?>');"></div>
 		<div class="half-block with-content">
