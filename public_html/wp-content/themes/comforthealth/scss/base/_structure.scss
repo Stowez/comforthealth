@@ -79,6 +79,18 @@ img {
 .col-3 {
 	width: 25%;
 	max-width: 25%;
+
+	@media only screen and (max-width: 710px)  { 
+		width: 45.5%;
+		max-width: 45.5%;
+		margin: 2rem 2%;
+	}
+
+	@media only screen and (max-width: 500px)  { 
+		max-width: 100%;
+		width: 100%;
+		display: block;
+	}
 }
 
 .col-4 {
