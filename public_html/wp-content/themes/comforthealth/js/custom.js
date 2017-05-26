@@ -25,7 +25,7 @@ $( document ).ready(function() {
 
 
 	if ($('section').first().hasClass('clean--header') ) {
-		$('section').first().css('margin-top', '75px');
+		$('section').first().css('margin-top', '55px');
 		$('.navigation').addClass('noscroll')
 	}
 
