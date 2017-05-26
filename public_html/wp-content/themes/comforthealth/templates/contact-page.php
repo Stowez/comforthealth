@@ -29,7 +29,7 @@ get_header();?>
 		<p><i class="fa fa-map-marker"></i><? the_field('address');?></p>
 		<p><i class="fa fa-phone"></i><? the_field('telephone');?></p>
 		<p><i class="fa fa-envelope"></i><? the_field('email');?></p>
-		<p><i class="fa fa-road"></i><a href="https://www.google.com/maps/dir/Current+Location/<?= urlencode( get_field('address') ) ?>">Get Directions</p>
+		<p><i class="fa fa-road"></i><a href="https://www.google.com/maps/dir/Current+Location/<?= urlencode( get_field('address') ) ?>">Get Directions</a></p>
 	</div>
 	<? the_content();?>
 </section>
