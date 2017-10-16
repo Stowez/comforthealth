@@ -37,6 +37,7 @@
 						<? foreach ($cats as $cat):?>
 							<a href="#" class="cat-tags"><?= $cat->name; ?></a>
 						<?endforeach;?>
+						<span class="blog__timestamp"><?= the_time('jS F Y')?></span>
 					</figure>
 					<div class="blog__content">
 						<header>
