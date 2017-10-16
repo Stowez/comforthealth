@@ -12,7 +12,7 @@
 				<h4>Newsletter Signup</h4>
 				<div class="newsletter">
 				<p>For the latest special offers and news about Comfort Health enter your email below.</p>
-				<? gravity_form(2, false, false, false, false, true, 10); ?>
+				<? gravity_form(2, false, false, false, false, false, 10); ?>
 				</div>
 			</div>
 		</div>
