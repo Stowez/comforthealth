@@ -1,4 +1,4 @@
-<div class="footerSocial">
+<div class="footerSocial mainFooter">
 	<div class="container">
 		<div class="row with-gutter">
 			<div class="col col-4">
@@ -9,17 +9,21 @@
 				<a class="twitter-timeline" data-width="100%" data-height="350" data-dnt="true" href="https://twitter.com/ComfortHealth_">Tweets by ComfortHealth_</a> <script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
 			</div>
 			<div class="col col-4">
-				<h4>Newsletter Signup</h4>
-				<div class="newsletter">
-				<p>For the latest special offers and news about Comfort Health enter your email below.</p>
-				<? gravity_form(2, false, false, false, false, true, 10); ?>
-				</div>
+				
 			</div>
 		</div>
 	</div>
-	
 </div>
-
+<div class="row with-gutter newsletter">
+	<div class="container">
+		<div class="col-12 col">
+			<div class="row">
+				<p>For the latest special offers and news about Comfort Health enter your email below.</p>
+				<? gravity_form(2, false, false, false, false, true, 10); ?>
+			</div>
+		</div>
+	</div>
+</div>
 <div class="footerNav">
 	<div class="container">
 		<div class="row">
