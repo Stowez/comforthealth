@@ -12,7 +12,7 @@ This widget adds a Simple Facebook page Like Widget into your WordPress website 
 
 == Description ==
 
-One of the most popular plugin for facebook page feeds widget with over 3,85,000 downloads and 90,000+ active installs.
+One of the most popular plugin for facebook page feeds widget with over 4,30,000 downloads and 90,000+ active installs.
 
 An inside look:
 
@@ -79,6 +79,9 @@ I have tested my widget with following themes. Please let me know your theme nam
 * News Pro (http://my.studiopress.com/themes/news/)
 
 == Changelog ==
+
+= Version 4.2 =
+* Facebook has deprecated language URL, so now added static json file to read languages.
 
 = Version 4.1 =
 * Now you can add individual widget into Page or Post using shortcode.

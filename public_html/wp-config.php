@@ -20,6 +20,9 @@
 
 // ** MySQL settings - You can get this info from your web host ** //
 /** The name of the database for WordPress */
+
+//define('WP_CACHE', true); //Added by WP-Cache Manager
+define( 'WPCACHEHOME', '/srv/comforthealth/public_html/wp-content/plugins/wp-super-cache/' ); //Added by WP-Cache Manager
 define('DB_NAME', 'comforth_db');
 
 /** MySQL database username */
@@ -77,7 +80,7 @@ $table_prefix  = 'wp_';
  *
  * @link https://codex.wordpress.org/Debugging_in_WordPress
  */
-define('WP_DEBUG', false);
+define('WP_DEBUG', true);
 define( 'WP_AUTO_UPDATE_CORE', true );
 /* That's all, stop editing! Happy blogging. */
 
@@ -88,5 +91,5 @@ if ( !defined('ABSPATH') )
 /** Sets up WordPress vars and included files. */
 require_once(ABSPATH . 'wp-settings.php');
 
-define('WP_HOME','https://comforthealth.co.uk');
-define('WP_SITEURL','https://comforthealth.co.uk');
+define('WP_HOME','https://www.comforthealth.co.uk');
+define('WP_SITEURL','https://www.comforthealth.co.uk');
