@@ -61,12 +61,16 @@ body > .navigation {
 
 		.menu-main-container {
 			margin-top: 0;
-		 	ul li ul {
-				    background: #fff;
+		 	ul li > ul {
 				top: 52px;
 				padding: 28px 0px 5px;
+				
+			}
+			ul li > ul {
+				background: #fff;
 				box-shadow: 1px 1px 0px 1px rgba(255, 255, 255, 0.2);
 			}
+
 		}
 
 	
@@ -100,9 +104,19 @@ body > .navigation {
 
 			    overflow: hidden;
 			}
+
+			@media only screen and (max-width: 520px)  {
+				left:0;
+				width:100%;
+				top: 5.5rem;
+			}
+
 			&.open {
 				@media only screen and (max-width: 820px)  {
 					max-height: 500px
+				}
+				@media only screen and (max-width: 520px)  {
+					padding:25px;
 				}
 			}
 			li {
@@ -136,9 +150,26 @@ body > .navigation {
 					width: auto;
 					padding-top: 5px;
 					background:rgba(0,0,0,0.85);
+					
+					> li {
+						position:relative
+					}
+
 					@media only screen and (max-width: 820px)  {
 						display: none !important;
 					}
+
+					ul.sub-menu {
+						a {
+							display: block;
+							white-space: nowrap;
+						}
+						padding-top:0;
+						left:100%;
+						top: 5px;
+						border-left: 1px solid rgba(0,0,0,0.15);
+					}
+
 					li {
 						display: block;
 						flex:0;
@@ -152,7 +183,7 @@ body > .navigation {
 				}
 
 				&.menu-item-has-children:hover {
-					ul {
+					> ul {
 						display: block;
 					}
 				}
@@ -202,6 +233,10 @@ body > .navigation {
 					@media only screen and (max-width: 820px)  {
 						line-height: 2.2rem;
 						padding: 15px;
+					}
+
+					@media only screen and (max-width: 520px)  {
+						padding: 7px 15px;
 					}
 					&:hover {
 						color: $pri;
