@@ -20,7 +20,7 @@ get_header();?>
 	<div class="container">
 		<article class="mainContent fullwidth">
 		<h2>Get in touch</h2>
-			<? gravity_form(1, false, false, false, false, true); ?>
+			<? gravity_form(1, false, false, false, false, false); ?>
 		</article>
 	</div>
 </section>

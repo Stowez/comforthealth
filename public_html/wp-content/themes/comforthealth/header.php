@@ -51,5 +51,5 @@
 <div class="social-icons">
 	<a href="https://www.facebook.com/ComfortHealthClifton/" target="_blank" class=""><i class="fa fa-facebook-official"></i></a>
 	<a href="https://twitter.com/ComfortHealth_" target="_blank" class=""><i class="fa fa-twitter-square"></i></a>
-	<a href="https://www.instagram.com/comforthealthphysio/?hl=en" target="_blank" class=""><i class="fa fa-instagram"></i></a>
+	<a href="https://www.instagram.com/comfort_health/?hl=en" target="_blank" class=""><i class="fa fa-instagram"></i></a>
 </div>

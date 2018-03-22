@@ -44,22 +44,38 @@ margin-bottom: 1rem;	}
 
 }
 
-.footerSocial {
-	.newsletter {
+.footerSocial, .newsletter {
+	&.newsletter {
 		background: #fff;
 		padding: 2rem;
 
 		p {
 			color: #111;
 		}
-	}
 
-	padding:5rem 0;
-	border-bottom: 1px solid #797979;
-	background: #222;
-	overflow: hidden;
-	@media only screen and (max-width: 1010px)  { 
-		text-align: center;}
+		.gform_body {
+			display: inline-block;
+			width: calc( 100% - 250px )
+		}
+		
+		.gform_footer {
+			display: inline-block;
+			margin-left: 30px;
+		}
+
+		h3 {
+			margin-bottom: 1rem;
+		}
+	}
+	&.mainFooter{
+		padding:5rem 0;
+		border-bottom: 1px solid #797979;
+		background: #222;
+		overflow: hidden;
+		@media only screen and (max-width: 1010px)  { 
+			text-align: center;
+		}
+	}
 	iframe {
 		background: #fff;
 		width: 100%;
@@ -116,8 +132,7 @@ margin-bottom: 1rem;	}
 		background: $pri;
 		width: 200px;
 		color: #fff;
-		margin-top: 2rem;
-		margin-right: 1rem;
+		margin-right: 0rem;
 		@media only screen and (max-width: 970px)  { 
 			width: 100%;}
 	}
