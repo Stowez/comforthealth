@@ -1,5 +1,7 @@
 <?php
 /**
+ * WPSEO plugin file.
+ *
  * @package WPSEO\Admin\ConfigurationUI
  */
 
@@ -42,8 +44,8 @@ class WPSEO_Config_Component_Configuration_Choices implements WPSEO_Config_Compo
 				'Yoast SEO'
 			),
 			array(
-				'type'  => 'primary',
-				'label' => sprintf(
+				'type'   => 'primary',
+				'label'  => sprintf(
 					/* translators: %s expands to 'Yoast SEO'. */
 					__( 'Configure %s', 'wordpress-seo' ), 'Yoast SEO'
 				),
@@ -66,7 +68,7 @@ class WPSEO_Config_Component_Configuration_Choices implements WPSEO_Config_Compo
 				'type'   => 'secondary',
 				'label'  => __( 'Configuration service', 'wordpress-seo' ),
 				'action' => 'followURL',
-				'url'    => 'https://yoa.st/wizard-configuration-upsell',
+				'url'    => WPSEO_Shortlinker::get( 'https://yoa.st/wizard-configuration-upsell' ),
 			),
 			plugin_dir_url( WPSEO_FILE ) . 'images/yoast-configuration-icon.svg'
 		);
