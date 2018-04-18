@@ -48,12 +48,6 @@
 		};
 	}
 
-	function intervalTrigger() {
-		return window.setInterval( function() {
-			document.querySelectorAll('button.action--next')[0].click();
-		}, 6000 );
-	  };
-
 	function nextSibling(el) {
 		var nextSibling = el.nextSibling;
 		while(nextSibling && nextSibling.nodeType != 1) {
@@ -84,10 +78,8 @@
 		this.isExpanded = false;
 		this.isAnimating = false;
 		this.closeCtrl = this.previewEl.querySelector('button.action--close');
-		this.nextCtrl = this.previewEl.querySelector('button.action--next');
-		this.prevCtrl = this.previewEl.querySelector('button.action--prev');
 		this.previewDescriptionEl = this.previewEl.querySelector('.description--preview');
-		this.intervalId = false;
+
 		this._init();
 	}
 
@@ -95,7 +87,7 @@
 	 * options
 	 */
 	GridFx.prototype.options = {
-		pagemargin : 75,
+		pagemargin : 0,
 		// x and y can have values from 0 to 1 (percentage). If negative then it means the alignment is left and/or top rather than right and/or bottom
 		// so, as an example, if we want our large image to be positioned vertically on 25% of the screen and centered horizontally the values would be x:1,y:-0.25
 		imgPosition : { x : 1, y : 1 },
@@ -109,8 +101,7 @@
 	GridFx.prototype._init = function() {
 		// callback
 		this.options.onInit(this);
-		
-		
+
 		var self = this;
 		// init masonry after all images are loaded
 		imagesLoaded( this.gridEl, function() {
@@ -129,8 +120,6 @@
 			self._setClone();
 		});
 	};
-
-
 
 	/**
 	 * initialize/bind events
@@ -169,32 +158,10 @@
 			self._closeItem(); 
 		});
 
-		this.nextCtrl.addEventListener('click', function() {
-			self._changeOpenItem('next')
-		});
-		this.prevCtrl.addEventListener('click', function() {
-			self._changeOpenItem('prev')
-		});
-		
-		window.addEventListener("keydown", function(event) {
-			if(event.which == 27) {
-				self._closeItem(); 
-			}
-			
-			if(event.which == 39) {
-				self._changeOpenItem('next')
-			}
-			if(event.which == 37) { 
-				self._changeOpenItem('prev')
-			}
-		});
-
 		window.addEventListener('resize', throttle(function(ev) {
 			// callback
 			self.options.onResize(self);
 		}, 10));
-
-
 	}
 
 	/**
@@ -202,10 +169,6 @@
 	 */
 	GridFx.prototype._openItem = function(ev, item) {
 		if( this.isAnimating || this.isExpanded ) return;
-		
-		this.intervalId = intervalTrigger();
-		
-
 		this.isAnimating = true;
 		this.isExpanded = true;
 
@@ -332,8 +295,6 @@
 		this.isExpanded = false;
 		this.isAnimating = true;
 
-		window.clearInterval(this.intervalId);
-		
 		// the grid item's image and its offset
 		var gridItem = this.items[this.current],
 			gridImg = gridItem.querySelector('img'),
@@ -390,49 +351,6 @@
 			height: window.innerHeight
 		};
 	};
-
-	// Toms Custom Function
-	GridFx.prototype._changeOpenItem = function(direction) {
-
-		var previos = this.items[this.current];
-
-		if(direction === 'next') {
-			this.current++;
-		} else {
-			this.current--;
-		}
-
-		var item = this.items[this.current];
-		if(typeof item === 'undefined' ) {
-			if(direction === 'next') {
-				this.current--;
-			} else {
-				this.current++;
-			}
-			return
-		}
-		window.clearInterval(this.intervalId);
-		this.intervalId = intervalTrigger();
-
-		if(typeof previos !== 'undefined' ) {
-			classie.remove(previos, 'grid__item--current');
-		}
-		
-		// set the src of the original image element (large image)
-		var gridImg = item.querySelector('img'),
-		gridImgOffset = gridImg.getBoundingClientRect();
-
-		this._setOriginal(item.querySelector('a').getAttribute('href'));
-
-		this._setClone(gridImg.src, {
-			width : gridImg.offsetWidth,
-			height : gridImg.offsetHeight,
-			left : gridImgOffset.left,
-			top : gridImgOffset.top
-		});
-
-		classie.add(item, 'grid__item--current');
-	}
 
 	window.GridFx = GridFx;
 

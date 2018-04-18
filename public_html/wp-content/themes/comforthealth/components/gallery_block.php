@@ -17,8 +17,6 @@ if( $images ): ?>
  <!-- /grid -->
     <div class="preview">
         <button class="action action--close"><i class="fa fa-times"></i><span class="text-hidden">Close</span></button>
-        <button class="action action--next"><i class="fa fa-chevron-right"></i><span class="text-hidden">Next</span></button>
-        <button class="action action--prev"><i class="fa fa-chevron-left"></i><span class="text-hidden">Previous</span></button>
         <div class="description description--preview"></div>
     </div>
 

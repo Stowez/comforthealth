@@ -54,8 +54,8 @@
                             "name": "background_image",
                             "type": "image",
                             "instructions": "",
-                            "required": "",
-                            "conditional_logic": "",
+                            "required": 1,
+                            "conditional_logic": 0,
                             "wrapper": {
                                 "width": "",
                                 "class": "",
@@ -277,6 +277,51 @@
                             },
                             "message": "",
                             "default_value": 0
+                        },
+                        {
+                            "key": "field_5ad78ff668fb9",
+                            "label": "Include Video Button",
+                            "name": "include_video_button",
+                            "type": "true_false",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": "",
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "message": "",
+                            "default_value": 0
+                        },
+                        {
+                            "key": "field_5ad7900c68fba",
+                            "label": "Play Button Text",
+                            "name": "play_button_text",
+                            "type": "text",
+                            "instructions": "",
+                            "required": 0,
+                            "conditional_logic": [
+                                [
+                                    {
+                                        "field": "field_5ad78ff668fb9",
+                                        "operator": "==",
+                                        "value": "1"
+                                    }
+                                ]
+                            ],
+                            "wrapper": {
+                                "width": "",
+                                "class": "",
+                                "id": ""
+                            },
+                            "default_value": "Take the Tour",
+                            "placeholder": "",
+                            "prepend": "",
+                            "append": "",
+                            "maxlength": "",
+                            "readonly": 0,
+                            "disabled": 0
                         }
                     ],
                     "min": "",
@@ -979,5 +1024,5 @@
     "hide_on_screen": "",
     "active": 1,
     "description": "",
-    "modified": 1486589552
+    "modified": 1524076582
 }

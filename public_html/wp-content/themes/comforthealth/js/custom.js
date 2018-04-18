@@ -48,6 +48,4 @@ $( document ).ready(function() {
 	 	$('html, body').animate({scrollTop: $(next).offset().top}, 500);
 	 	// console.log($);
 	 })
-
 });
-
