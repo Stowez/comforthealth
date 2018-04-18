@@ -1,4 +1,7 @@
 <?php
+if( $_REQUEST['play'] && !$_COOKIE['played'] ) {
+	setcookie("played", 1, time()+3600);
+}
 /**
  * The template for displaying the header
  */
