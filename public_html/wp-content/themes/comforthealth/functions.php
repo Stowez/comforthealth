@@ -29,8 +29,9 @@ add_action( 'after_setup_theme', 'comforthealth_setup' );
 function register_style_scripts() {
  	// wp_deregister_script('jquery');
     // wp_enqueue_style( 'template', get_stylesheet_uri() );
-    wp_enqueue_style( 'core',  get_template_directory_uri() . '/styles/core.css' );
-    wp_enqueue_script( 'custom', get_template_directory_uri() . '/js/custom.js', array() );
+	wp_enqueue_style( 'core',  get_template_directory_uri() . '/styles/core.css' );
+	wp_enqueue_style( 'featherlight',  get_template_directory_uri() . '/js/featherlight.css' );
+	wp_enqueue_script( 'custom', get_template_directory_uri() . '/js/custom.js', array() );
 }
 add_action( 'wp_enqueue_scripts', 'register_style_scripts' );
 

@@ -67,4 +67,8 @@
 
   return t;
 }(document, "script", "twitter-wjs"));</script>
+
 <? wp_footer();?>
+
+<script src="<? bloginfo('template_url');?>/js/featherlight.js" type="text/javascript" charset="utf-8"></script>
+</body>

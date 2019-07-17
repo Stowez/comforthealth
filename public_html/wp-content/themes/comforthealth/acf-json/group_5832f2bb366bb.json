@@ -481,7 +481,7 @@
                             "collapsed": "",
                             "min": "",
                             "max": "",
-                            "layout": "table",
+                            "layout": "block",
                             "button_label": "Add Member",
                             "sub_fields": [
                                 {
@@ -533,7 +533,7 @@
                                     "key": "field_5856867803527",
                                     "label": "Profile",
                                     "name": "profile",
-                                    "type": "textarea",
+                                    "type": "wysiwyg",
                                     "instructions": "",
                                     "required": 0,
                                     "conditional_logic": 0,
@@ -1024,5 +1024,5 @@
     "hide_on_screen": "",
     "active": 1,
     "description": "",
-    "modified": 1524076582
+    "modified": 1545076582
 }
