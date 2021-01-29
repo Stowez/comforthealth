@@ -13,5 +13,10 @@ RewriteRule . /index.php [L]
     ModPagespeed on
     ModPagespeedDisallow "*/wpgmaps.js"
    ModPagespeedDisallow "*/contact-us/*" 
+  ModPagespeedDisallow "*/video-call-physiotherapy/*"
 </IfModule>
 
+
+
+Redirect 301 /what-we-offer/physio-services/physiotherapy /physiotherapy/
+Redirect 301 /what-we-offer/physio-services/physiotherapy/ /physiotherapy/

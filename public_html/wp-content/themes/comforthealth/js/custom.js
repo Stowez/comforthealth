@@ -42,12 +42,18 @@ $( document ).ready(function() {
 	 	$(this).toggleClass('open');
 	 })
 
+	 $('li.menu-item-object-custom.menu-item-has-children > a').on('click', function(e) {
+	 	if($(window).innerWidth() < 800) {
+	 		e.preventDefault();
+				 		$(this).parent('li').toggleClass('active');
+ 		}
+	 });
+
 	 $('#scrollNext').on('click', function(e) {
 	 	e.preventDefault();
 	 	var next = $(this).parent().next();
 	 	$('html, body').animate({scrollTop: $(next).offset().top}, 500);
 	 	// console.log($);
-	 })
-
+	 });
 });
 

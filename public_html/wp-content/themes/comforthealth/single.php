@@ -1,4 +1,4 @@
-<?
+<? // Single
 get_header();
 ?>
 
@@ -15,8 +15,13 @@ get_header();
 							<header>
 								<nav>
 								<?$cats = get_the_category();?>
+								<?$catCount = 0;?>
 								<? foreach ($cats as $cat):?>
+									<?if($catCount > 7):
+										break;
+									endif;?>
 									<a href="#<?= $cat->slug; ?>" class="cat-tags"><?= $cat->name; ?></a>
+									<?$catCount++;?>
 								<?endforeach;?>
 								</nav>
 								<h1 class="banner__title"><a href="<? the_permalink(); ?>"><? the_title(); ?></a></h1>
@@ -42,7 +47,6 @@ get_header();
 
 			
 		<?
-		$count++;
 		endwhile;?>
 	</section>
 <?endif;

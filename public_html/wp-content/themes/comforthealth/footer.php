@@ -1,4 +1,4 @@
-<div class="footerSocial mainFooter">
+<?/*<div class="footerSocial mainFooter">
 	<div class="container">
 		<div class="row with-gutter">
 			<div class="col col-4">
@@ -15,6 +15,7 @@
 		</div>
 	</div>
 </div>
+*/?>
 <div class="row with-gutter newsletter">
 	<div class="container">
 		<div class="col-12 col">
@@ -69,6 +70,16 @@
 }(document, "script", "twitter-wjs"));</script>
 
 <? wp_footer();?>
-
+<? if(is_page('video-call-physiotherapy')):?>
+<script>
+gform.addFilter( 'gform_datepicker_options_pre_init', function( optionsObj, formId, fieldId ) {
+    if ( formId == 4 && fieldId == 11) {
+        optionsObj.firstDay = 1;
+        optionsObj.beforeShowDay = jQuery.datepicker.noWeekends;
+    }
+    return optionsObj;
+});
+</script>
+<? endif; ?>
 <script src="<? bloginfo('template_url');?>/js/featherlight.js" type="text/javascript" charset="utf-8"></script>
 </body>

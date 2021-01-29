@@ -13,7 +13,8 @@
 	<meta charset="<?php bloginfo( 'charset' ); ?>">
 	<meta name="viewport" content="width=device-width">
 	<link rel="profile" href="http://gmpg.org/xfn/11">
-	<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+	 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
 	<script src="//cdnjs.cloudflare.com/ajax/libs/jquery.matchHeight/0.7.0/jquery.matchHeight-min.js"></script>
 	<script src="https://use.fontawesome.com/3931bddda4.js"></script>
 	<link rel="icon" type="image/png" href="<?bloginfo('template_url');?>/fav.png" />
@@ -29,14 +30,16 @@
   m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
   })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-  ga('create', 'UA-69294137-2', 'auto');
+  ga('create', 'UA-69294137-2', 'auto', {'allowLinker': true});
+  ga('require', 'linker');
+  ga('linker:autoLink', ['comfort-health.cliniko.com'], true );
   ga('send', 'pageview');
 
 </script>
-<nav class="navigation">
+<nav class="navigation <?= is_page('home') ? 'noscroll' : '';?>">
 	<div class="container">
 		<div class="flexWrap">
-			<?if (is_front_page() ) :?>
+			<?if (is_front_page() || is_page('home')) :?>
 				<h1 class="headerLogo"><a href="/" >
 					Comfort Health - Clifton
 				</a></h1>
@@ -57,4 +60,5 @@
 	<a href="https://www.facebook.com/ComfortHealthClifton/" target="_blank" class=""><i class="fa fa-facebook-official"></i></a>
 	<a href="https://twitter.com/ComfortHealth_" target="_blank" class=""><i class="fa fa-twitter-square"></i></a>
 	<a href="https://www.instagram.com/comfort_health/?hl=en" target="_blank" class=""><i class="fa fa-instagram"></i></a>
+	<a href="https://www.youtube.com/channel/UCXKrfIHYRPO6dJiicl05J8Q" target="_blank"><i class="fa fa-youtube"></i></a>
 </div>

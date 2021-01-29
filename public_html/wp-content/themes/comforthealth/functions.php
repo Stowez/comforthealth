@@ -27,20 +27,53 @@ add_action( 'after_setup_theme', 'comforthealth_setup' );
  * Load in our core stylesheet & our custom js
  */
 function register_style_scripts() {
- 	// wp_deregister_script('jquery');
     // wp_enqueue_style( 'template', get_stylesheet_uri() );
-	wp_enqueue_style( 'core',  get_template_directory_uri() . '/styles/core.css' );
+
+	wp_enqueue_style( 'core',  get_template_directory_uri() . '/styles/core.css?v=2' );
 	wp_enqueue_style( 'featherlight',  get_template_directory_uri() . '/js/featherlight.css' );
-	wp_enqueue_script( 'custom', get_template_directory_uri() . '/js/custom.js', array() );
+	wp_enqueue_script( 'custom', get_template_directory_uri() . '/js/custom.js', array('jquery') );
 }
 add_action( 'wp_enqueue_scripts', 'register_style_scripts' );
-
 
 // Function to add subscribe text to posts and pages
 // Add Shortcode
 function booking_shortcode() {
+	
+	return "<div id='my-cliniko-online-bookings'></div>
+	<script type='text/javascript'>
+(function(){
+  var linker,
+      iFrame = document.createElement('iframe'),
+      divId = 'my-cliniko-online-bookings';
+  iFrame.id = 'my-cliniko-online-bookings-iframe';
+  iFrame.src = 'https://comfort-health.cliniko.com/bookings?embedded=true';
+  iFrame.frameBorder = 0;
+  iFrame.scrolling = 'auto';
+  iFrame.width = '100%';
+  iFrame.height = '1000';
+  iFrame.style = 'pointer-events: auto;'
+  function decorateiFrame(divId, url, opt_hash) {
+    return function(tracker) {
+      window.linker = window.linker || new window.gaplugins.Linker(tracker);
+      iFrame.src = window.linker.decorate(url, opt_hash);
+    };
+  }
+  // Dynamically add the iFrame to the page with proper linker parameters.
+  ga(decorateiFrame(divId, iFrame.src));
+  document.getElementById(divId).appendChild(iFrame);
+  // Listen to the iFrame for resize events
+  window.addEventListener('message', function handleIFrameMessage(e) {
+  var clinikoBookings = document.getElementById('my-cliniko-online-bookings-iframe');
+  if (typeof e.data !== 'string') return;
+  if (e.data.search('cliniko-bookings-resize') > -1) {
+    var height = Number(e.data.split(':')[1]);
+    clinikoBookings.style.height = height + 50 + 'px';
+  }
+  e.data.search('cliniko-bookings-page') > -1 && clinikoBookings.scrollIntoView();
+  });
+})();
 
-	return '<iframe src="https://comfort-health.cliniko.com/bookings?embedded=true" width="100%" height="1400" frameborder="0" scrolling="auto"></iframe>';
+</script>";
 
 }
 add_shortcode( 'booking_form', 'booking_shortcode' );
@@ -73,3 +106,13 @@ function arphabet_widgets_init() {
 }
 add_action( 'widgets_init', 'arphabet_widgets_init' );
 
+
+function custom_excerpt_length( $length ) {
+	return 25;
+}
+add_filter( 'excerpt_length', 'custom_excerpt_length', 999 );
+
+function custom_excerpt_more( $more ) {
+return '...';
+}
+add_filter( 'excerpt_more', 'custom_excerpt_more' );
