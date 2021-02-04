@@ -185,6 +185,9 @@ body > .navigation {
 				&.menu-item-has-children:hover {
 					> ul {
 						display: block;
+						@media only screen and (max-width: 820px)  {
+							display: none;
+						}
 					}
 				}
 
@@ -329,7 +332,7 @@ body > .navigation {
 		padding: 0 !important;
 		box-shadow: none !important;
     	padding-left: 1rem !important;
-		li a{
+		li a {
 			padding: 1rem !important;
 			
 		}
