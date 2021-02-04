@@ -13,7 +13,7 @@
 
 	<?if(is_front_page()){?>
 		<div class="videoContainer">
-			<iframe class="videoContainer__video" width="1920" height="1080" src="http://www.youtube.com/embed/t25gS8Mjlak?modestbranding=1&autoplay=1&controls=0&fs=0&loop=1&rel=0&mute=1&showinfo=0&disablekb=1" frameborder="0"></iframe>
+			<iframe class="videoContainer__video" width="1920" height="1080" src="https://www.youtube.com/embed/t25gS8Mjlak?modestbranding=1&autoplay=1&controls=0&fs=0&loop=1&rel=0&mute=1&showinfo=0&disablekb=1" frameborder="0"></iframe>
 		</div>
 	<?};?>
 	<div class="container">
