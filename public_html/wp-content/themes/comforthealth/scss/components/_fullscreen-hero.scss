@@ -1,6 +1,6 @@
 .fullscreen-hero {
 	height: 100vh;
-	min-height: 50rem;
+	min-height: 800px;
 	display: -webkit-box;
     display: -moz-box;
     display: -ms-flexbox;
@@ -65,8 +65,8 @@
 			text-transform: uppercase;
 			line-height: 5rem;
 			@media only screen and (max-width: 700px)  {
-				font-size: 2.8rem;
-				line-height: 3.8rem;
+				font-size: 2.4rem;
+				line-height: 3.2rem;
 
 			}
 		}
@@ -89,9 +89,15 @@
 
 	@media only screen and (max-width: 400px)  {
 		img {
-			max-width: 250px;
+			max-width: 220px;
 		}
 	}
+	.content p {
+	@media only screen and (max-width: 600px)  {
+	
+			font-size: 1.4rem;
+	}
+}
 
 	&.lightCmpt {
 
@@ -149,3 +155,43 @@
 	left: 0;
 	top: 0;
 }
+
+.videoContainer {
+	position: absolute;
+	width: 100%;
+	//height: 100%;
+	top: 0;
+	left: 0;
+	padding-bottom: 56.25%;
+	bottom: 0;
+	right: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	@media (max-width:800px) {
+		display:none;
+	}
+  }
+  
+  .videoContainer iframe {
+	/* optional */
+	width: 100%;
+	height: 100%; 
+	position: absolute;
+    top: 0;
+    left: 0;
+	
+  }
+
+  .book-now-button {
+	padding: 1.5rem 1.5rem .75rem;
+    border: 1px solid #fff;
+    color: #fff;
+	text-decoration: none;
+	@media only screen and (max-width: 400px)  {
+		margin-bottom: .5rem;
+		display: inline-block;
+	}
+  }

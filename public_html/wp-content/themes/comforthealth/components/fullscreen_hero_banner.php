@@ -4,13 +4,23 @@
 	} else {
 		$style = "background-color: ".get_sub_field('background_colour');
 	}
-?>
+	?>
+
 
 
 
 <section class="fullscreen-hero fullscreen-hero--center <?= (get_sub_field('background_image_or_colour') == 'image' ? 'darkOverlay' : 'lightCmpt') ?> <?= (get_sub_field('half_height') ? 'half--hero' : '')?>" style="<?= $style ?>">
-	<div class="container">
 
+	<?if(is_front_page()){?>
+		<div class="videoContainer">
+			<iframe class="videoContainer__video" width="1920" height="1080" src="http://www.youtube.com/embed/t25gS8Mjlak?modestbranding=1&autoplay=1&controls=0&fs=0&loop=1&rel=0&mute=1&showinfo=0&disablekb=1" frameborder="0"></iframe>
+		</div>
+	<?};?>
+	<div class="container">
+	<?if (is_front_page()) :?>
+			<h2><a href="/booking/" class="book-now-button">Book Now</a></h2>
+		<?endif;?>
+	
 		<?php
 			if ( function_exists('yoast_breadcrumb') && get_sub_field('half_height') && !get_sub_field('hide_breadcrumbs')) {
 				yoast_breadcrumb('<p id="breadcrumbs">','</p>');
