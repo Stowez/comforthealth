@@ -214,3 +214,10 @@
 		display: none;
 	}
 }
+
+.fullscreen-hero.front-page {
+	@media (min-width:800px) {
+		align-items: flex-start;
+		padding-top:45px;
+	}
+}

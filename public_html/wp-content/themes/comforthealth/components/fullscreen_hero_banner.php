@@ -9,7 +9,7 @@
 
 
 
-<section class="fullscreen-hero fullscreen-hero--center <?= (get_sub_field('background_image_or_colour') == 'image' ? 'darkOverlay' : 'lightCmpt') ?> <?= (get_sub_field('half_height') ? 'half--hero' : '')?>" style="<?= $style ?>">
+<section class="fullscreen-hero fullscreen-hero--center <?if (is_front_page()) :?> front-page <?endif;?> <?= (get_sub_field('background_image_or_colour') == 'image' ? 'darkOverlay' : 'lightCmpt') ?> <?= (get_sub_field('half_height') ? 'half--hero' : '')?>" style="<?= $style ?>">
 
 	<?if(is_front_page()){?>
 		<div class="videoContainer">
