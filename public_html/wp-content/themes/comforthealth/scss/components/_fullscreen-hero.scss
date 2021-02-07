@@ -191,9 +191,11 @@
   
   .home .fullscreen-hero {
 	@media (min-width:801px) {
-	background-image: url('../images/comforthealth-banner.png') !important;
-	background-position: 50%;
-	background-size: cover;
+		background-image: url('../images/comforthealth-banner.png') !important;
+		background-position: 50%;
+		background-size: cover;
+		min-height: 600px;
+		height: 90vh;
 	}
 
   } 
@@ -218,6 +220,6 @@
 .fullscreen-hero.front-page {
 	@media (min-width:800px) {
 		align-items: flex-start;
-		padding-top:45px;
+		padding-top:65px;
 	}
 }
