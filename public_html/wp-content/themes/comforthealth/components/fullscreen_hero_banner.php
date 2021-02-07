@@ -27,7 +27,7 @@
 			}
 		?>
 		<img src="<? the_sub_field('logo_icon'); ?>">
-		<article class="content content--center">
+		<article class="content content--center<?if (is_front_page()) :?> hide-desktop <?endif;?>">
 
 			<? the_sub_field('content_block'); ?>
 			<?if (get_sub_field('include_video_button')) :?>

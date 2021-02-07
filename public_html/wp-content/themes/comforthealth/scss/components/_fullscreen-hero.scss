@@ -208,3 +208,9 @@
 		display: inline-block;
 	}
 	}
+
+.hide-desktop {
+	@media (min-width:800px) {
+		display: none;
+	}
+}
