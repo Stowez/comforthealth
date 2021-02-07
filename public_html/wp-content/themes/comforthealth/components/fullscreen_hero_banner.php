@@ -26,7 +26,7 @@
 				yoast_breadcrumb('<p id="breadcrumbs">','</p>');
 			}
 		?>
-		<img src="<? the_sub_field('logo_icon'); ?>">
+		<img src="<? the_sub_field('logo_icon'); ?>" class="<?if (is_front_page()) :?> hide-desktop <?endif;?>"">
 		<article class="content content--center<?if (is_front_page()) :?> hide-desktop <?endif;?>">
 
 			<? the_sub_field('content_block'); ?>
