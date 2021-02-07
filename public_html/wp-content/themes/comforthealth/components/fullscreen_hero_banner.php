@@ -31,7 +31,7 @@
 
 			<? the_sub_field('content_block'); ?>
 			<?if (get_sub_field('include_video_button')) :?>
-				<a class="btn outline video" href="https://www.youtube.com/embed/RbV9RcT0xOQ?rel=0&amp;controls=0&amp;showinfo=0&autoplay=1" data-featherlight="iframe" data-featherlight-iframe-frameborder="0" data-featherlight-iframe-allow="autoplay; encrypted-media" data-featherlight-iframe-allowfullscreen="true" data-featherlight-iframe-style="display:block;border:none;height:80vh;width:80vw;"><? the_sub_field('play_button_text'); ?></a>
+				<a class="btn outline video" href="https://www.youtube.com/embed/t25gS8Mjlak?rel=0&amp;controls=0&amp;showinfo=0&autoplay=1" data-featherlight="iframe" data-featherlight-iframe-frameborder="0" data-featherlight-iframe-allow="autoplay; encrypted-media" data-featherlight-iframe-allowfullscreen="true" data-featherlight-iframe-style="display:block;border:none;height:80vh;width:80vw;"><? the_sub_field('play_button_text'); ?></a>
 			<?endif;?>
 		</article>
 	</div>

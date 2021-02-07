@@ -15,7 +15,7 @@
 	background-position: 50%;
 	background-attachment: fixed;
 	@media only screen and (max-width: 700px)  {
-		background-attachment: initial;
+		//background-attachment: initial;
 	}
 	
 	&.fullscreen-map {
@@ -171,6 +171,7 @@
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
+	height: 100%;
 	align-items: center;
 
 	@media (max-width:800px) {
