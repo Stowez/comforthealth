@@ -64,3 +64,28 @@
 		position: relative;
 	}
 }
+
+.booking-form {
+	label {
+		font-size: 1.4rem;
+		color: #979797;
+		text-align: left;
+		margin-bottom: 0.5rem;
+		display: block;
+	}
+
+	button, input[type="submit"] {
+		width: 200px;
+		padding: 1rem;
+		background: $pri;
+		border: 1px solid #fff;
+		color: #fff;
+		outline: 1px solid $pri;
+	}
+
+	.gform_footer {
+		padding: 0 2rem;
+		text-align: right;
+		position: relative;
+	}
+}
