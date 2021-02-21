@@ -189,18 +189,7 @@
   }
 
   
-  .home .fullscreen-hero {
-	@media (min-width:801px) {
-		background-image: url('../images/comforthealth-banner.png') !important;
-		background-position: 50%;
-		background-size: cover;
-		min-height: 600px;
-		height: 90vh;
-	}
-
-  } 
-
-	.book-now-button {
+.book-now-button {
 	padding: 1.5rem 1.5rem .75rem;
 	border: 1px solid #fff;
 	color: #fff;

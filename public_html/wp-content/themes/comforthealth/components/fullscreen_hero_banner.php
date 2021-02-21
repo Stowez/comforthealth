@@ -11,13 +11,8 @@
 
 <section class="fullscreen-hero fullscreen-hero--center <?if (is_front_page()) :?> front-page <?endif;?> <?= (get_sub_field('background_image_or_colour') == 'image' ? 'darkOverlay' : 'lightCmpt') ?> <?= (get_sub_field('half_height') ? 'half--hero' : '')?>" style="<?= $style ?>">
 
-	<?if(is_front_page()){?>
-		<div class="videoContainer">
-			<iframe class="videoContainer__video" width="1920" height="1080" src="https://www.youtube.com/embed/t25gS8Mjlak?modestbranding=1&autoplay=1&controls=0&fs=0&loop=1&rel=0&mute=1&showinfo=0&disablekb=1" frameborder="0"></iframe>
-		</div>
-	<?};?>
 	<div class="container">
-	<?if (is_front_page()) :?>
+		<?if (is_front_page()) :?>
 			<h2><a href="/booking/" class="book-now-button">Book Now</a></h2>
 		<?endif;?>
 	
@@ -26,8 +21,8 @@
 				yoast_breadcrumb('<p id="breadcrumbs">','</p>');
 			}
 		?>
-		<img src="<? the_sub_field('logo_icon'); ?>" class="<?if (is_front_page()) :?> hide-desktop <?endif;?>"">
-		<article class="content content--center<?if (is_front_page()) :?> hide-desktop <?endif;?>">
+		<img src="<? the_sub_field('logo_icon'); ?>" class="">
+		<article class="content content--center">
 
 			<? the_sub_field('content_block'); ?>
 			<?if (get_sub_field('include_video_button')) :?>
