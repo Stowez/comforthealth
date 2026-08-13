@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpCSValidationInspection */
 
 // If Gravity Forms isn't loaded, bail.
 if ( ! class_exists( 'GFForms' ) ) {
@@ -25,6 +25,34 @@ class GF_Field_Name extends GF_Field {
 	public $type = 'name';
 
 	/**
+	 * Indicates if this field supports state validation.
+	 *
+	 * @since 3.0
+	 *
+	 * @var bool
+	 */
+	protected $_supports_state_validation = true;
+
+	/**
+	 * Returns the HTML tag for the field container.
+	 *
+	 * @since 2.5
+	 *
+	 * @param array $form The current Form object.
+	 *
+	 * @return string
+	 */
+	public function get_field_container_tag( $form ) {
+
+		if ( GFCommon::is_legacy_markup_enabled( $form ) ) {
+			return parent::get_field_container_tag( $form );
+		}
+
+		return 'fieldset';
+
+	}
+
+	/**
 	 * Sets the field title of the Name field.
 	 *
 	 * @since  Unknown
@@ -37,6 +65,30 @@ class GF_Field_Name extends GF_Field {
 	 */
 	public function get_form_editor_field_title() {
 		return esc_attr__( 'Name', 'gravityforms' );
+	}
+
+	/**
+	 * Returns the field's form editor description.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function get_form_editor_field_description() {
+		return esc_attr__( 'Allows users to enter their name in the format you have specified.', 'gravityforms' );
+	}
+
+	/**
+	 * Returns the field's form editor icon.
+	 *
+	 * This could be an icon url or a gform-icon class.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function get_form_editor_field_icon() {
+		return 'gform-icon--name-2';
 	}
 
 	/**
@@ -55,9 +107,21 @@ class GF_Field_Name extends GF_Field {
 	}
 
 	/**
+	 * Defines the IDs of required inputs.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string[]
+	 */
+	public function get_required_inputs_ids() {
+		return array( '3', '6' );
+	}
+
+	/**
 	 * Validates Name field inputs.
 	 *
-	 * @since  Unknown
+	 * @since 1.9
+	 * @since 2.6.5 Updated to use set_required_error().
 	 * @access public
 	 *
 	 * @used-by GFFormDisplay::validate()
@@ -74,15 +138,8 @@ class GF_Field_Name extends GF_Field {
 	 * @return void
 	 */
 	function validate( $value, $form ) {
-
 		if ( $this->isRequired && $this->nameFormat != 'simple' ) {
-			$first = rgar( $value, $this->id . '.3' );
-			$last  = rgar( $value, $this->id . '.6' );
-			if (   ( empty( $first ) && ! $this->get_input_property( '3', 'isHidden' ) )
-				|| ( empty( $last )  && ! $this->get_input_property( '6', 'isHidden' ) ) ) {
-				$this->failed_validation  = true;
-				$this->validation_message = empty( $this->errorMessage ) ? esc_html__( 'This field is required. Please enter the first and last name.', 'gravityforms' ) : $this->errorMessage;
-			}
+			$this->set_required_error( $value, true );
 		}
 	}
 
@@ -112,6 +169,7 @@ class GF_Field_Name extends GF_Field {
 			'visibility_setting',
 			'description_setting',
 			'css_class_setting',
+			'autocomplete_setting',
 		);
 	}
 
@@ -156,14 +214,14 @@ class GF_Field_Name extends GF_Field {
 		$size         = $this->size;
 		$class_suffix = rgget('view') == 'entry' ? '_admin' : '';
 		$class        = $size . $class_suffix;
+		$class        = esc_attr( $class );
 
 		$disabled_text = $is_form_editor ? "disabled='disabled'" : '';
 		$class_suffix  = $is_entry_detail ? '_admin' : '';
 
-		$form_sub_label_placement  = rgar( $form, 'subLabelPlacement' );
-		$field_sub_label_placement = $this->subLabelPlacement;
-		$is_sub_label_above        = $field_sub_label_placement == 'above' || ( empty( $field_sub_label_placement ) && $form_sub_label_placement == 'above' );
-		$sub_label_class_attribute = $field_sub_label_placement == 'hidden_label' ? "class='hidden_sub_label screen-reader-text'" : '';
+		$is_sub_label_above = $this->is_sub_label_above( $form );
+
+		$sub_label_class = $this->subLabelPlacement == 'hidden_label' ? "hidden_sub_label screen-reader-text" : '';
 
 		$prefix = '';
 		$first  = '';
@@ -190,13 +248,26 @@ class GF_Field_Name extends GF_Field {
 		$last_placeholder_attribute   = GFCommon::get_input_placeholder_attribute( $last_input );
 		$suffix_placeholder_attribute = GFCommon::get_input_placeholder_attribute( $suffix_input );
 
-		// ARIA labels. Prefix is handled in self::get_name_prefix_field().
-		$first_name_aria_label  = esc_attr__( 'First name', 'gravityforms' );
-		$middle_name_aria_label = esc_attr__( 'Middle name', 'gravityforms' );
-		$last_name_aria_label   = esc_attr__( 'Last name', 'gravityforms' );
-		$suffix_aria_label      = esc_attr__( 'Name suffix', 'gravityforms' );
+		// ARIA labels.
 		$required_attribute     = $this->isRequired ? 'aria-required="true"' : '';
 		$invalid_attribute      = $this->failed_validation ? 'aria-invalid="true"' : 'aria-invalid="false"';
+		$describedby_attribute  = $this->get_aria_describedby();
+		$input_aria_describedby = '';
+
+
+		if ( $this->nameFormat != 'simple' ) {
+			// specific aria attributes for each individual input.
+			$first_aria_attributes  = $this->get_aria_attributes( $value, '3');
+			$middle_aria_attributes = $this->get_aria_attributes( $value, '4');
+			$last_aria_attributes   = $this->get_aria_attributes( $value, '6');
+			$suffix_aria_attributes = $this->get_aria_attributes( $value, '8');
+		}
+
+		$prefix_autocomplete = $this->enableAutocomplete ? $this->get_input_autocomplete_attribute( $prefix_input ) : '';
+		$first_autocomplete  = $this->enableAutocomplete ? $this->get_input_autocomplete_attribute( $first_input ) : '';
+		$middle_autocomplete = $this->enableAutocomplete ? $this->get_input_autocomplete_attribute( $middle_input ) : '';
+		$last_autocomplete   = $this->enableAutocomplete ? $this->get_input_autocomplete_attribute( $last_input ) : '';
+		$suffix_autocomplete = $this->enableAutocomplete ? $this->get_input_autocomplete_attribute( $suffix_input ) : '';
 
 		switch ( $this->nameFormat ) {
 
@@ -226,42 +297,42 @@ class GF_Field_Name extends GF_Field {
 					if ( $is_admin || ! rgar( $prefix_input, 'isHidden' ) ) {
 						$prefix_select_class = isset( $prefix_input['choices'] ) && is_array( $prefix_input['choices'] ) ? 'name_prefix_select' : '';
 						$prefix_markup       = self::get_name_prefix_field( $prefix_input, $id, $field_id, $prefix, $disabled_text, $prefix_tabindex );
-						$prefix_markup       = "<span id='{$field_id}_2_container' class='name_prefix {$prefix_select_class}' {$style}>
-                                                    <label for='{$field_id}_2' {$sub_label_class_attribute}>{$prefix_sub_label}</label>
+						$prefix_markup       = "<span id='{$field_id}_2_container' class='name_prefix {$prefix_select_class} gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <label for='{$field_id}_2' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$prefix_sub_label}</label>
                                                     {$prefix_markup}
                                                   </span>";
 					}
 
 					$style = ( $is_admin && rgar( $first_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $first_input, 'isHidden' ) ) {
-						$first_markup = "<span id='{$field_id}_3_container' class='name_first' {$style}>
-                                                    <label for='{$field_id}_3' {$sub_label_class_attribute}>{$first_name_sub_label}</label>
-                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' aria-label='{$first_name_aria_label}' {$first_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$first_placeholder_attribute}/>
+						$first_markup = "<span id='{$field_id}_3_container' class='name_first gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <label for='{$field_id}_3' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$first_name_sub_label}</label>
+                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' {$first_tabindex} {$disabled_text} {$first_aria_attributes} {$first_placeholder_attribute} {$first_autocomplete} {$this->maybe_add_aria_describedby( $first_input, $field_id, $this['formId'] )}/>
                                                 </span>";
 					}
 
 					$style = ( $is_admin && ( ! isset( $middle_input['isHidden'] ) || rgar( $middle_input, 'isHidden' ) ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ( isset( $middle_input['isHidden'] ) && $middle_input['isHidden'] == false ) ) {
-						$middle_markup = "<span id='{$field_id}_4_container' class='name_middle' {$style}>
-                                                    <label for='{$field_id}_4' {$sub_label_class_attribute}>{$middle_name_sub_label}</label>
-                                                    <input type='text' name='input_{$id}.4' id='{$field_id}_4' value='{$middle}' aria-label='{$middle_name_aria_label}' {$middle_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$middle_placeholder_attribute}/>
+						$middle_markup = "<span id='{$field_id}_4_container' class='name_middle gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <label for='{$field_id}_4' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$middle_name_sub_label}</label>
+                                                    <input type='text' name='input_{$id}.4' id='{$field_id}_4' value='{$middle}' {$middle_tabindex} {$disabled_text} {$middle_aria_attributes} {$middle_placeholder_attribute} {$middle_autocomplete} {$this->maybe_add_aria_describedby( $middle_input, $field_id, $this['formId'] )}/>
                                                 </span>";
 					}
 
 					$style = ( $is_admin && rgar( $last_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $last_input, 'isHidden' ) ) {
-						$last_markup = "<span id='{$field_id}_6_container' class='name_last' {$style}>
-                                                            <label for='{$field_id}_6' {$sub_label_class_attribute}>{$last_name_sub_label}</label>
-                                                            <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' aria-label='{$last_name_aria_label}' {$last_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$last_placeholder_attribute}/>
+						$last_markup = "<span id='{$field_id}_6_container' class='name_last gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                            <label for='{$field_id}_6' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$last_name_sub_label}</label>
+                                                            <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' {$last_tabindex} {$disabled_text} {$last_aria_attributes} {$last_placeholder_attribute} {$last_autocomplete} {$this->maybe_add_aria_describedby( $last_input, $field_id, $this['formId'] )}/>
                                                         </span>";
 					}
 
 					$style = ( $is_admin && rgar( $suffix_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $suffix_input, 'isHidden' ) ) {
 						$suffix_select_class = isset( $suffix_input['choices'] ) && is_array( $suffix_input['choices'] ) ? 'name_suffix_select' : '';
-						$suffix_markup       = "<span id='{$field_id}_8_container' class='name_suffix {$suffix_select_class}' {$style}>
-                                                        <label for='{$field_id}_8' {$sub_label_class_attribute}>{$suffix_sub_label}</label>
-                                                        <input type='text' name='input_{$id}.8' id='{$field_id}_8' value='{$suffix}' aria-label='{$suffix_aria_label}' {$suffix_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$suffix_placeholder_attribute}/>
+						$suffix_markup       = "<span id='{$field_id}_8_container' class='name_suffix {$suffix_select_class} gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                        <label for='{$field_id}_8' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$suffix_sub_label}</label>
+                                                        <input type='text' name='input_{$id}.8' id='{$field_id}_8' value='{$suffix}' {$suffix_tabindex} {$disabled_text} {$suffix_aria_attributes} {$suffix_placeholder_attribute} {$suffix_autocomplete} {$this->maybe_add_aria_describedby( $suffix_input, $field_id, $this['formId'] )}/>
                                                     </span>";
 					}
 				} else {
@@ -269,49 +340,49 @@ class GF_Field_Name extends GF_Field {
 					if ( $is_admin || ! rgar( $prefix_input, 'isHidden' ) ) {
 						$prefix_select_class = isset( $prefix_input['choices'] ) && is_array( $prefix_input['choices'] ) ? 'name_prefix_select' : '';
 						$prefix_markup       = self::get_name_prefix_field( $prefix_input, $id, $field_id, $prefix, $disabled_text, $prefix_tabindex );
-						$prefix_markup       = "<span id='{$field_id}_2_container' class='name_prefix {$prefix_select_class}' {$style}>
+						$prefix_markup       = "<span id='{$field_id}_2_container' class='name_prefix {$prefix_select_class} gform-grid-col gform-grid-col--size-auto' {$style}>
                                                     {$prefix_markup}
-                                                    <label for='{$field_id}_2' {$sub_label_class_attribute}>{$prefix_sub_label}</label>
+                                                    <label for='{$field_id}_2' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$prefix_sub_label}</label>
                                                   </span>";
 					}
 
 					$style = ( $is_admin && rgar( $first_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $first_input, 'isHidden' ) ) {
-						$first_markup = "<span id='{$field_id}_3_container' class='name_first' {$style}>
-                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' aria-label='{$first_name_aria_label}' {$first_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$first_placeholder_attribute}/>
-                                                    <label for='{$field_id}_3' {$sub_label_class_attribute}>{$first_name_sub_label}</label>
+						$first_markup = "<span id='{$field_id}_3_container' class='name_first gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' {$first_tabindex} {$disabled_text} {$first_aria_attributes} {$first_placeholder_attribute} {$first_autocomplete} {$this->maybe_add_aria_describedby( $first_input, $field_id, $this['formId'] )}/>
+                                                    <label for='{$field_id}_3' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$first_name_sub_label}</label>
                                                 </span>";
 					}
 
 					$style = ( $is_admin && ( ! isset( $middle_input['isHidden'] ) || rgar( $middle_input, 'isHidden' ) ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ( isset( $middle_input['isHidden'] ) && $middle_input['isHidden'] == false ) ) {
-						$middle_markup = "<span id='{$field_id}_4_container' class='name_middle' {$style}>
-                                                    <input type='text' name='input_{$id}.4' id='{$field_id}_4' value='{$middle}' aria-label='{$middle_name_aria_label}' {$middle_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$middle_placeholder_attribute}/>
-                                                    <label for='{$field_id}_4' {$sub_label_class_attribute}>{$middle_name_sub_label}</label>
+						$middle_markup = "<span id='{$field_id}_4_container' class='name_middle gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <input type='text' name='input_{$id}.4' id='{$field_id}_4' value='{$middle}' {$middle_tabindex} {$disabled_text} {$middle_aria_attributes} {$middle_placeholder_attribute} {$middle_autocomplete} {$this->maybe_add_aria_describedby( $middle_input, $field_id, $this['formId'] )}/>
+                                                    <label for='{$field_id}_4' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$middle_name_sub_label}</label>
                                                 </span>";
 					}
 
 					$style = ( $is_admin && rgar( $last_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $last_input, 'isHidden' ) ) {
-						$last_markup = "<span id='{$field_id}_6_container' class='name_last' {$style}>
-                                                    <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' aria-label='{$last_name_aria_label}' {$last_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$last_placeholder_attribute}/>
-                                                    <label for='{$field_id}_6' {$sub_label_class_attribute}>{$last_name_sub_label}</label>
+						$last_markup = "<span id='{$field_id}_6_container' class='name_last gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' {$last_tabindex} {$disabled_text} {$last_aria_attributes} {$last_placeholder_attribute} {$last_autocomplete} {$this->maybe_add_aria_describedby( $last_input, $field_id, $this['formId'] )}/>
+                                                    <label for='{$field_id}_6' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$last_name_sub_label}</label>
                                                 </span>";
 					}
 
 					$style = ( $is_admin && rgar( $suffix_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $suffix_input, 'isHidden' ) ) {
 						$suffix_select_class = isset( $suffix_input['choices'] ) && is_array( $suffix_input['choices'] ) ? 'name_suffix_select' : '';
-						$suffix_markup       = "<span id='{$field_id}_8_container' class='name_suffix {$suffix_select_class}' {$style}>
-                                                    <input type='text' name='input_{$id}.8' id='{$field_id}_8' value='{$suffix}' aria-label='{$suffix_aria_label}' {$suffix_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$suffix_placeholder_attribute}/>
-                                                    <label for='{$field_id}_8' {$sub_label_class_attribute}>{$suffix_sub_label}</label>
+						$suffix_markup       = "<span id='{$field_id}_8_container' class='name_suffix {$suffix_select_class} gform-grid-col gform-grid-col--size-auto' {$style}>
+                                                    <input type='text' name='input_{$id}.8' id='{$field_id}_8' value='{$suffix}' {$suffix_tabindex} {$disabled_text} {$suffix_aria_attributes} {$suffix_placeholder_attribute} {$suffix_autocomplete} {$this->maybe_add_aria_describedby( $suffix_input, $field_id, $this['formId'] )}/>
+                                                    <label for='{$field_id}_8' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$suffix_sub_label}</label>
                                                 </span>";
 					}
 				}
 				$css_class = $this->get_css_class();
 
 
-				return "<div class='ginput_complex{$class_suffix} ginput_container {$css_class}' id='{$field_id}'>
+				return "<div class='ginput_complex{$class_suffix} ginput_container ginput_container--name {$css_class} gform-grid-row' id='{$field_id}'>
                             {$prefix_markup}
                             {$first_markup}
                             {$middle_markup}
@@ -325,7 +396,7 @@ class GF_Field_Name extends GF_Field {
 				$placeholder_attribute = GFCommon::get_field_placeholder_attribute( $this );
 
 				return "<div class='ginput_container ginput_container_name'>
-                                    <input name='input_{$id}' id='{$field_id}' type='text' value='{$value}' class='{$class}' {$tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$placeholder_attribute}/>
+                                    <input name='input_{$id}' id='{$field_id}' type='text' value='{$value}' class='{$class}' {$tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$describedby_attribute} {$placeholder_attribute} />
                                 </div>";
 			default :
 				$first_tabindex       = GFCommon::get_tabindex();
@@ -336,62 +407,48 @@ class GF_Field_Name extends GF_Field {
 					$first_markup = '';
 					$style        = ( $is_admin && rgar( $first_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $first_input, 'isHidden' ) ) {
-						$first_markup = "<span id='{$field_id}_3_container' class='name_first' {$style}>
-                                                    <label for='{$field_id}_3' {$sub_label_class_attribute}>{$first_name_sub_label}</label>
-                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' aria-label='{$first_name_aria_label}' {$first_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$first_placeholder_attribute}/>
+						$first_markup = "<span id='{$field_id}_3_container' class='name_first gform-grid-col' {$style}>
+                                                    <label for='{$field_id}_3' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$first_name_sub_label}</label>
+                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' {$first_tabindex} {$disabled_text} {$first_aria_attributes} {$first_placeholder_attribute} />
                                                 </span>";
 					}
 
 					$last_markup = '';
 					$style       = ( $is_admin && rgar( $last_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $last_input, 'isHidden' ) ) {
-						$last_markup = "<span id='{$field_id}_6_container' class='name_last' {$style}>
-                                                <label for='{$field_id}_6' {$sub_label_class_attribute}>" . $last_name_sub_label . "</label>
-                                                <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' aria-label='{$last_name_aria_label}' {$last_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$last_placeholder_attribute}/>
+						$last_markup = "<span id='{$field_id}_6_container' class='name_last gform-grid-col' {$style}>
+                                                <label for='{$field_id}_6' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>" . $last_name_sub_label . "</label>
+                                                <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' {$last_tabindex} {$disabled_text} {$last_aria_attributes} {$last_placeholder_attribute} />
                                             </span>";
 					}
 				} else {
 					$first_markup = '';
 					$style        = ( $is_admin && rgar( $first_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $first_input, 'isHidden' ) ) {
-						$first_markup = "<span id='{$field_id}_3_container' class='name_first' {$style}>
-                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' aria-label='{$first_name_aria_label}' {$first_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$first_placeholder_attribute}/>
-                                                    <label for='{$field_id}_3' {$sub_label_class_attribute}>{$first_name_sub_label}</label>
+						$first_markup = "<span id='{$field_id}_3_container' class='name_first gform-grid-col' {$style}>
+                                                    <input type='text' name='input_{$id}.3' id='{$field_id}_3' value='{$first}' {$first_tabindex} {$disabled_text} {$first_aria_attributes} {$first_placeholder_attribute} />
+                                                    <label for='{$field_id}_3' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$first_name_sub_label}</label>
                                                </span>";
 					}
 
 					$last_markup = '';
 					$style       = ( $is_admin && rgar( $last_input, 'isHidden' ) ) ? "style='display:none;'" : '';
 					if ( $is_admin || ! rgar( $last_input, 'isHidden' ) ) {
-						$last_markup = "<span id='{$field_id}_6_container' class='name_last' {$style}>
-                                                    <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' aria-label='{$last_name_aria_label}' {$last_tabindex} {$disabled_text} {$required_attribute} {$invalid_attribute} {$last_placeholder_attribute}/>
-                                                    <label for='{$field_id}_6' {$sub_label_class_attribute}>{$last_name_sub_label}</label>
+						$last_markup = "<span id='{$field_id}_6_container' class='name_last gform-grid-col' {$style}>
+                                                    <input type='text' name='input_{$id}.6' id='{$field_id}_6' value='{$last}' {$last_tabindex} {$disabled_text} {$last_aria_attributes} {$last_placeholder_attribute} />
+                                                    <label for='{$field_id}_6' class='gform-field-label gform-field-label--type-sub {$sub_label_class}'>{$last_name_sub_label}</label>
                                                 </span>";
 					}
 				}
 
 				$css_class = $this->get_css_class();
 
-				return "<div class='ginput_complex{$class_suffix} ginput_container {$css_class}' id='{$field_id}'>
+				return "<div class='ginput_complex{$class_suffix} ginput_container ginput_container--name {$css_class} gform-grid-row' id='{$field_id}'>
                             {$first_markup}
                             {$last_markup}
                             <div class='gf_clear gf_clear_complex'></div>
                         </div>";
 		}
-	}
-
-	/**
-	 * Defines the CSS class to be applied to the field label.
-	 *
-	 * @since  Unknown
-	 * @access public
-	 *
-	 * @used-by GF_Field::get_field_content()
-	 *
-	 * @return string The CSS class.
-	 */
-	public function get_field_label_class() {
-		return 'gfield_label gfield_label_before_complex';
 	}
 
 	/**
@@ -475,10 +532,11 @@ class GF_Field_Name extends GF_Field {
 	 *
 	 * @return string The field HTML markup.
 	 */
-	public static function get_name_prefix_field( $input, $id, $field_id, $value, $disabled_text, $tabindex ) {
+	public function get_name_prefix_field( $input, $id, $field_id, $value, $disabled_text, $tabindex ) {
 
-		$prefix_aria_label = esc_attr__( 'Name prefix', 'gravityforms' );
-
+		$autocomplete          = $this->enableAutocomplete ? $this->get_input_autocomplete_attribute( $input ) : '';
+		$aria_attributes       = $this->get_aria_attributes( array( $input['id'] => $value ), '2' );
+		$describedby_attribute = $this->get_aria_describedby();
 
 		if ( isset( $input['choices'] ) && is_array( $input['choices'] ) ) {
 			$placeholder_value = GFCommon::get_input_placeholder_value( $input );
@@ -492,14 +550,14 @@ class GF_Field_Name extends GF_Field {
 				$options .= "<option value='{$choice_value}' {$selected}>{$choice['text']}</option>";
 			}
 
-			$markup = "<select name='input_{$id}.2' id='{$field_id}_2' aria-label='{$prefix_aria_label}' {$tabindex} {$disabled_text}>
+			$markup = "<select name='input_{$id}.2' id='{$field_id}_2' {$tabindex} {$disabled_text} {$autocomplete} {$aria_attributes} {$this->maybe_add_aria_describedby( $input, $field_id, $this['formId'] )}>
                           {$options}
                       </select>";
 
 		} else {
 			$placeholder_attribute = GFCommon::get_input_placeholder_attribute( $input );
 
-			$markup = "<input type='text' name='input_{$id}.2' id='{$field_id}_2' value='{$value}' aria-label='{$prefix_aria_label}' {$tabindex} {$disabled_text} {$placeholder_attribute}/>";
+			$markup = "<input type='text' name='input_{$id}.2' id='{$field_id}_2' value='{$value}' {$tabindex} {$disabled_text} {$placeholder_attribute} {$autocomplete} {$this->maybe_add_aria_describedby( $input, $field_id, $this['formId'] )}/>";
 		}
 
 		return $markup;
@@ -509,20 +567,17 @@ class GF_Field_Name extends GF_Field {
 	 * Gets the field value to be displayed on the entry detail page.
 	 *
 	 * @since  Unknown
-	 * @access public
-	 *
-	 * @used-by GFCommon::get_lead_field_display()
-	 * @uses    GF_Field_Name::$id
+	 * @since  2.9.29 Changed the second parameter $currency (string) to $entry (array).
 	 *
 	 * @param array|string $value    The value of the field input.
-	 * @param string       $currency Not used.
+	 * @param array        $entry    Not used.
 	 * @param bool         $use_text Not used.
 	 * @param string       $format   The format to output the value. Defaults to 'html'.
 	 * @param string       $media    Not used.
 	 *
 	 * @return array|string The value to be displayed on the entry detail page.
 	 */
-	public function get_value_entry_detail( $value, $currency = '', $use_text = false, $format = 'html', $media = 'screen' ) {
+	public function get_value_entry_detail( $value, $entry = array(), $use_text = false, $format = 'html', $media = 'screen' ) {
 
 		if ( is_array( $value ) ) {
 			$prefix = trim( rgget( $this->id . '.2', $value ) );
@@ -546,26 +601,6 @@ class GF_Field_Name extends GF_Field {
 			$return = esc_html( $return );
 		}
 		return $return;
-	}
-
-	/**
-	 * Gets a property value from an input.
-	 *
-	 * @since  Unknown
-	 * @access public
-	 *
-	 * @used-by GF_Field_Name::validate()
-	 * @uses    GFFormsModel::get_input()
-	 *
-	 * @param int    $input_id      The input ID to obtain the property from.
-	 * @param string $property_name The property name to search for.
-	 *
-	 * @return null|string The property value if found. Otherwise, null.
-	 */
-	public function get_input_property( $input_id, $property_name ) {
-		$input = GFFormsModel::get_input( $this, $this->id . '.' . (string) $input_id );
-
-		return rgar( $input, $property_name );
 	}
 
 	/**
@@ -702,6 +737,53 @@ class GF_Field_Name extends GF_Field {
 
 		return $operators;
 	}
+
+	/**
+	 * Determines if this field will be processed by the state validation.
+	 *
+	 * @since 3.0
+	 *
+	 * @return bool
+	 */
+	public function is_state_validation_supported() {
+		return $this->nameFormat === 'advanced' && parent::is_state_validation_supported();
+	}
+
+	/**
+	 * Prepares the value that will be hashed on form display as part of the state.
+	 *
+	 * @since 3.0
+	 *
+	 * @param string|array $value The default value.
+	 *
+	 * @return null|array
+	 */
+	public function get_values_for_state_hash( $value ) {
+		$id           = $this->id;
+		$prefix_id    = "{$id}.2";
+		$prefix_input = GFFormsModel::get_input( $this, $prefix_id );
+		if ( rgar( $prefix_input, 'isHidden' ) ) {
+			return null;
+		}
+
+		return array(
+			$prefix_id => $this->get_choices_for_state_hash( rgar( $prefix_input, 'choices', array() ) ),
+		);
+	}
+
+	/**
+	 * Indicates if state validation should be skipped if the submitted value is blank.
+	 *
+	 * @since 3.0
+	 *
+	 * @param string|int $key The field or input ID.
+	 *
+	 * @return bool
+	 */
+	public function skip_state_validation_if_blank( $key ) {
+		return true;
+	}
+
 }
 
 // Registers the Name field with the field framework.

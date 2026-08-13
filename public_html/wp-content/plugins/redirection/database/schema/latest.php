@@ -4,6 +4,9 @@
  * Latest database schema
  */
 class Red_Latest_Database extends Red_Database_Upgrader {
+	/**
+	 * @return array<string, string>
+	 */
 	public function get_stages() {
 		return [
 			/* translators: displayed when installing the plugin */
@@ -18,10 +21,14 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 	 *
 	 * @return bool|WP_Error true if installed, WP_Error otherwise
 	 */
+	/**
+	 * @return bool|\WP_Error
+	 */
 	public function install() {
 		global $wpdb;
 
 		foreach ( $this->get_stages() as $stage => $info ) {
+			// @phpstan-ignore method.dynamicName
 			$result = $this->$stage( $wpdb );
 
 			if ( is_wp_error( $result ) ) {
@@ -40,6 +47,9 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 	/**
 	 * Remove the database and any options (including unused ones)
 	 */
+	/**
+	 * @return void
+	 */
 	public function remove() {
 		global $wpdb;
 
@@ -55,13 +65,15 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 		delete_option( 'redirection_index' );
 		delete_option( 'redirection_options' );
 		delete_option( Red_Database_Status::OLD_DB_VERSION );
-		delete_option( Red_Database_Status::DB_UPGRADE_STAGE );
 	}
 
 	/**
 	 * Return any tables that are missing from the database
 	 *
 	 * @return array Array of missing table names
+	 */
+	/**
+	 * @return list<string>
 	 */
 	public function get_missing_tables() {
 		global $wpdb;
@@ -85,6 +97,9 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 	 *
 	 * @return array Database schema array
 	 */
+	/**
+	 * @return list<string>
+	 */
 	public function get_table_schema() {
 		global $wpdb;
 
@@ -92,9 +107,14 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 		$show = array();
 
 		foreach ( $tables as $table ) {
+			// Suppress errors when checking for table existence
+			$wpdb->hide_errors();
+			$wpdb->suppress_errors( true );
 			// These are known queries without user input
 			// phpcs:ignore
 			$row = $wpdb->get_row( 'SHOW CREATE TABLE ' . $table, ARRAY_N );
+			$wpdb->show_errors();
+			$wpdb->suppress_errors( false );
 
 			if ( $row ) {
 				$show = array_merge( $show, explode( "\n", $row[1] ) );
@@ -113,6 +133,9 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 	 *
 	 * @return array
 	 */
+	/**
+	 * @return array<string, string>
+	 */
 	public function get_all_tables() {
 		global $wpdb;
 
@@ -128,6 +151,11 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 
 	/**
 	 * Creates default group information
+	 */
+	/**
+	 * @param \wpdb $wpdb
+	 * @param bool $is_live
+	 * @return bool
 	 */
 	public function create_groups( $wpdb, $is_live = true ) {
 		if ( ! $is_live ) {
@@ -156,7 +184,7 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 		}
 
 		$group = $wpdb->get_row( "SELECT * FROM {$wpdb->prefix}redirection_groups LIMIT 1" );
-		if ( $group ) {
+		if ( $group !== null ) {
 			red_set_options( array( 'last_group_id' => $group->id ) );
 		}
 
@@ -166,34 +194,43 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 	/**
 	 * Creates all the tables
 	 */
+	/**
+	 * @param \wpdb $wpdb
+	 * @return bool
+	 */
 	public function create_tables( $wpdb ) {
 		global $wpdb;
 
 		foreach ( $this->get_all_tables() as $table => $sql ) {
-			$sql = preg_replace( '/[ \t]{2,}/', '', $sql );
+			$sql = (string) preg_replace( '/[ \t]{2,}/', '', $sql );
 			$this->do_query( $wpdb, $sql );
 		}
 
 		return true;
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param string $charset_collate
+	 * @return string
+	 */
 	private function create_items_sql( $prefix, $charset_collate ) {
 		return "CREATE TABLE IF NOT EXISTS `{$prefix}redirection_items` (
 			`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
 			`url` mediumtext NOT NULL,
-			`match_url` varchar(2000) DEFAULT NULL,
-  			`match_data` text,
-			`regex` int(11) unsigned NOT NULL DEFAULT '0',
-			`position` int(11) unsigned NOT NULL DEFAULT '0',
-			`last_count` int(10) unsigned NOT NULL DEFAULT '0',
-			`last_access` datetime NOT NULL DEFAULT '0000-00-00 00:00:00',
-			`group_id` int(11) NOT NULL DEFAULT '0',
+			`match_url` VARCHAR(2000) DEFAULT NULL,
+  			`match_data` TEXT DEFAULT NULL,
+			`regex` INT(11) unsigned NOT NULL DEFAULT 0,
+			`position` INT(11) unsigned NOT NULL DEFAULT 0,
+			`last_count` INT(10) unsigned NOT NULL DEFAULT 0,
+			`last_access` datetime NOT NULL DEFAULT '1970-01-01 00:00:00',
+			`group_id` INT(11) NOT NULL DEFAULT 0,
 			`status` enum('enabled','disabled') NOT NULL DEFAULT 'enabled',
-			`action_type` varchar(20) NOT NULL,
-			`action_code` int(11) unsigned NOT NULL,
-			`action_data` mediumtext,
-			`match_type` varchar(20) NOT NULL,
-			`title` text,
+			`action_type` VARCHAR(20) NOT NULL,
+			`action_code` INT(11) unsigned NOT NULL,
+			`action_data` MEDIUMTEXT DEFAULT NULL,
+			`match_type` VARCHAR(20) NOT NULL,
+			`title` TEXT DEFAULT NULL,
 			PRIMARY KEY (`id`),
 			KEY `url` (`url`(191)),
 			KEY `status` (`status`),
@@ -204,54 +241,73 @@ class Red_Latest_Database extends Red_Database_Upgrader {
 	  ) $charset_collate";
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param string $charset_collate
+	 * @return string
+	 */
 	private function create_groups_sql( $prefix, $charset_collate ) {
 		return "CREATE TABLE IF NOT EXISTS `{$prefix}redirection_groups` (
 			`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-			`name` varchar(50) NOT NULL,
-			`tracking` int(11) NOT NULL DEFAULT '1',
-			`module_id` int(11) unsigned NOT NULL DEFAULT '0',
+			`name` VARCHAR(50) NOT NULL,
+			`tracking` INT(11) NOT NULL DEFAULT 1,
+			`module_id` INT(11) unsigned NOT NULL DEFAULT 0,
 			`status` enum('enabled','disabled') NOT NULL DEFAULT 'enabled',
-			`position` int(11) unsigned NOT NULL DEFAULT '0',
+			`position` INT(11) unsigned NOT NULL DEFAULT 0,
 			PRIMARY KEY (`id`),
 			KEY `module_id` (`module_id`),
 			KEY `status` (`status`)
 		) $charset_collate";
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param string $charset_collate
+	 * @return string
+	 */
 	private function create_log_sql( $prefix, $charset_collate ) {
 		return "CREATE TABLE IF NOT EXISTS `{$prefix}redirection_logs` (
-		  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-		  `created` datetime NOT NULL,
-		  `url` mediumtext NOT NULL,
-		  `sent_to` mediumtext,
-		  `agent` mediumtext NOT NULL,
-		  `referrer` mediumtext,
-		  `redirection_id` int(11) unsigned DEFAULT NULL,
-  		  `ip` varchar(45) DEFAULT NULL,
-		  `module_id` int(11) unsigned NOT NULL,
-		  `group_id` int(11) unsigned DEFAULT NULL,
-		  PRIMARY KEY (`id`),
-		  KEY `created` (`created`),
-		  KEY `redirection_id` (`redirection_id`),
-		  KEY `ip` (`ip`),
-		  KEY `group_id` (`group_id`),
-		  KEY `module_id` (`module_id`)
+			`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+			`created` datetime NOT NULL,
+			`url` MEDIUMTEXT NOT NULL,
+			`domain` VARCHAR(255) DEFAULT NULL,
+			`sent_to` MEDIUMTEXT DEFAULT NULL,
+			`agent` MEDIUMTEXT DEFAULT NULL,
+			`referrer` MEDIUMTEXT DEFAULT NULL,
+			`http_code` INT(11) unsigned NOT NULL DEFAULT 0,
+			`request_method` VARCHAR(10) DEFAULT NULL,
+			`request_data` MEDIUMTEXT DEFAULT NULL,
+			`redirect_by` VARCHAR(50) DEFAULT NULL,
+			`redirection_id` INT(11) unsigned DEFAULT NULL,
+			`ip` VARCHAR(45) DEFAULT NULL,
+			PRIMARY KEY (`id`),
+			KEY `created` (`created`),
+			KEY `redirection_id` (`redirection_id`),
+			KEY `ip` (`ip`)
 	  	) $charset_collate";
 	}
 
+	/**
+	 * @param string $prefix
+	 * @param string $charset_collate
+	 * @return string
+	 */
 	private function create_404_sql( $prefix, $charset_collate ) {
 		return "CREATE TABLE IF NOT EXISTS `{$prefix}redirection_404` (
-		  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-		  `created` datetime NOT NULL,
-		  `url` varchar(255) NOT NULL DEFAULT '',
-		  `agent` varchar(255) DEFAULT NULL,
-		  `referrer` varchar(255) DEFAULT NULL,
-		  `ip` varchar(45) DEFAULT NULL,
-		  PRIMARY KEY (`id`),
-		  KEY `created` (`created`),
-		  KEY `url` (`url`(191)),
-		  KEY `referrer` (`referrer`(191)),
-		  KEY `ip` (`ip`)
+			`id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+			`created` datetime NOT NULL,
+			`url` MEDIUMTEXT NOT NULL,
+			`domain` VARCHAR(255) DEFAULT NULL,
+			`agent` VARCHAR(255) DEFAULT NULL,
+			`referrer` VARCHAR(255) DEFAULT NULL,
+			`http_code` INT(11) unsigned NOT NULL DEFAULT 0,
+			`request_method` VARCHAR(10) DEFAULT NULL,
+			`request_data` MEDIUMTEXT DEFAULT NULL,
+			`ip` VARCHAR(45) DEFAULT NULL,
+			PRIMARY KEY (`id`),
+			KEY `created` (`created`),
+			KEY `referrer` (`referrer`(191)),
+			KEY `ip` (`ip`)
 	  	) $charset_collate";
 	}
 }

@@ -1,10 +1,10 @@
 <?php
 
 /**
- * Plugin Name: Reviews and Rating - Google Business
+ * Plugin Name: Reviews and Rating - Google Reviews
  * Plugin URI: https://wordpress.org/plugins/g-business-reviews-rating/
- * Description: Shortcode and widget for Google reviews, current rating and direct links to allow customers to leave their own rating and review – data sourced from Google Business
- * Version: 3.9
+ * Description: Shortcode and widget for Google reviews, current rating and direct links to allow customers to leave their own rating and review – data sourced from Google My Business
+ * Version: 5.10
  * Author: Noah Hearle, Design Extreme
  * Author URI: https://designextreme.com/wordpress/
  * Donate link: https://paypal.me/designextreme
@@ -15,8 +15,8 @@
  */
 
 /**
- *  Reviews and Rating - Google Business
- *  Copyright 2019-2020 Noah Hearle <wordpress-plugins@designextreme.com>
+ *  Reviews and Rating - Google Reviews
+ *  Copyright 2019-2022 Noah Hearle <wordpress-plugins@designextreme.com>
  *
  *  This program is free software: you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -31,7 +31,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 
 if (!defined('ABSPATH'))
 {

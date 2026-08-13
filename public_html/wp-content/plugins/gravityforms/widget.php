@@ -33,7 +33,7 @@ if ( ! class_exists( 'GFWidget' ) ) {
 
 			$description = esc_html__( 'Gravity Forms Widget', 'gravityforms' );
 
-			WP_Widget::__construct( 
+			WP_Widget::__construct(
 				'gform_widget',
 				__( 'Form', 'gravityforms' ),
 				array( 'classname' => 'gform_widget', 'description' => $description ),
@@ -47,8 +47,8 @@ if ( ! class_exists( 'GFWidget' ) ) {
 		 *
 		 * @see WP_Widget::widget
 		 * @see RGFormsModel::get_form_meta
-		 * @see RGForms::print_form_scripts
-		 * @see RGForms::get_form
+		 * @see GFForms::print_form_scripts
+		 * @see GFForms::get_form
 		 *
 		 * @param array $args     Arguments provided to the widget
 		 * @param array $instance Saved database values for the widget
@@ -56,7 +56,19 @@ if ( ! class_exists( 'GFWidget' ) ) {
 		function widget( $args, $instance ) {
 
 			extract( $args );
-			echo $before_widget;
+			echo $before_widget; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+
+			if ( empty( $instance ) ) {
+				$forms = RGFormsModel::get_forms( 1, 'title' );
+				if ( empty( $forms ) ) {
+					return '';
+				}
+				$form                        = GFAPI::get_form( $forms[0]->id );
+				$instance['form_id']         = $form['id'];
+				$instance['ajax']            = false;
+				$instance['showtitle']       = false;
+				$instance['showdescription'] = false;
+			}
 
 			/**
 			 * Filters the widget title.
@@ -68,26 +80,26 @@ if ( ! class_exists( 'GFWidget' ) ) {
 			 * @param array  $instance Saved database values for the widget.
 			 * @param mixed  $id_base  The widget ID.
 			 */
-			$title = apply_filters( 'widget_title', $instance['title'], $instance, $this->id_base );
+			$title = apply_filters( 'widget_title', rgar( $instance, 'title' ), $instance, $this->id_base );
 
 			if ( $title ) {
-				echo $before_title . $title . $after_title;
+				echo $before_title . $title . $after_title; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			}
 
-			$tabindex = is_numeric( $instance['tabindex'] ) ? $instance['tabindex'] : 0;
-
+			$tabindex = is_numeric( rgar( $instance, 'tabindex' ) ) ? $instance['tabindex'] : 0;
 			// Creating form
-			$form = RGFormsModel::get_form_meta( $instance['form_id'] );
-
+			if ( empty( $form ) ) {
+				$form = RGFormsModel::get_form_meta( $instance['form_id'] );
+			}
 			if ( empty( $instance['disable_scripts'] ) && ! is_admin() ) {
-				RGForms::print_form_scripts( $form, $instance['ajax'] );
+				GFForms::print_form_scripts( $form, $instance['ajax'] );
 			}
 
-			$form_markup = RGForms::get_form( $instance['form_id'], $instance['showtitle'], $instance['showdescription'], false, null, $instance['ajax'], $tabindex );
+			$form_markup = GFForms::get_form( $instance['form_id'], $instance['showtitle'], $instance['showdescription'], false, null, $instance['ajax'], $tabindex );
 
 			// Display form
-			echo $form_markup;
-			echo $after_widget;
+			echo $form_markup; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+			echo $after_widget; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		}
 
 		/**
@@ -136,7 +148,7 @@ if ( ! class_exists( 'GFWidget' ) ) {
 						if ( $form->id == rgar( $instance, 'form_id' ) ) {
 							$selected = ' selected="selected"';
 						}
-						echo '<option value="' . absint( $form->id ) . '" ' . $selected . '>' . esc_html( $form->title ) . '</option>';
+						echo '<option value="' . absint( $form->id ) . '" ' . $selected . '>' . esc_html( $form->title ) . '</option>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 					}
 					?>
 				</select>

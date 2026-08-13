@@ -17,16 +17,31 @@ jQuery(function($) {
 		var self = this;
 		
 		this.element = element;
-		
+
 		if(window.wpgmzaUnbindSaveReminder)
 			window.wpgmzaUnbindSaveReminder();
-		
-		$(element).show();
+
+
+		/**
+		 * As of V9.0.0
+		 * 
+		 * We no longer use this modal, but we do use it as a 'installation' redirect for simplicity
+		 * 
+		 * This just calls a new internal delegate method and doesn't use the remodal core, or popup actions
+		*/
+		if($(this.element).data('installer-link')){
+			WPGMZA.initInstallerRedirect($(this.element).data('installer-link'));
+			return;
+		}
+
+
 		$(element).remodal().open();
-		
+		$(element).show();
 		$(element).find("input:radio").on("change", function(event) {
 			
 			$("#wpgmza-confirm-engine").prop("disabled", false);
+
+			$("#wpgmza-confirm-engine").click();
 			
 		});
 		
@@ -51,7 +66,8 @@ jQuery(function($) {
 			method: "POST",
 			data: {
 				action: "wpgmza_maps_engine_dialog_set_engine",
-				engine: $("[name='wpgmza_maps_engine']:checked").val()
+				engine: $("[name='wpgmza_maps_engine']:checked").val(),
+				nonce: $("#wpgmza-maps-engine-dialog").attr("data-ajax-nonce")
 			},
 			success: function(response, status, xhr) {
 				window.location.reload();
@@ -59,7 +75,7 @@ jQuery(function($) {
 		});
 	}
 	
-	$(window).on("load", function(event) {
+	$(document).ready(function(event) {
 		
 		var element = $("#wpgmza-maps-engine-dialog");
 		
@@ -71,7 +87,12 @@ jQuery(function($) {
 		
 		if(WPGMZA.settings.wpgmza_google_maps_api_key && WPGMZA.settings.wpgmza_google_maps_api_key.length)
 			return;
-		
+
+		if(WPGMZA.ignoreInstallerRedirect){
+			/* We are still in paused installer mode */
+			return;
+		}
+
 		WPGMZA.mapsEngineDialog = new WPGMZA.MapsEngineDialog(element);
 		
 	});

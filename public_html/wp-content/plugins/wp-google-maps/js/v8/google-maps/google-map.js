@@ -17,28 +17,13 @@ jQuery(function($) {
 		
 		Parent.call(this, element, options);
 		
-		if(!window.google)
-		{
-			var status = WPGMZA.googleAPIStatus;
-			var message = "Google API not loaded";
-			
-			if(status && status.message)
-				message += " - " + status.message;
-			
-			if(status.code == "USER_CONSENT_NOT_GIVEN")
-			{
-				return;
-			}
-			
-			$(element).html("<div class='notice notice-error'><p>" + WPGMZA.localized_strings.google_api_not_loaded + "<pre>" + message + "</pre></p></div>");
-			
-			throw new Error(message);
-		}
-		
 		this.loadGoogleMap();
 		
-		if(options)
-			this.setOptions(options);
+		if(options){
+			this.setOptions(options, true);
+		} else {
+			this.setOptions({}, true);
+		}
 
 		google.maps.event.addListener(this.googleMap, "click", function(event) {
 			var wpgmzaEvent = new WPGMZA.Event("click");
@@ -71,6 +56,49 @@ jQuery(function($) {
 		google.maps.event.addListener(this.googleMap, "idle", function(event) {
 			self.onIdle(event);
 		});
+
+		if(this.googleMap.getStreetView()){
+			// Bind streetview events
+			google.maps.event.addListener(this.googleMap.getStreetView(), "visible_changed", function(){
+				var wpgmzaEvent = new WPGMZA.Event("streetview_visible_changed");
+
+				wpgmzaEvent.visible = this.getVisible();
+
+				self.dispatchEvent(wpgmzaEvent);
+			});
+
+			google.maps.event.addListener(this.googleMap.getStreetView(), "position_changed", function(){
+				var wpgmzaEvent = new WPGMZA.Event("streetview_position_changed");
+
+				const position = this.getPosition();
+				if(position){
+					wpgmzaEvent.latLng = {
+						lat: position.lat(),
+						lng: position.lng()
+					};
+				}	
+
+				wpgmzaEvent.visible = this.getVisible();
+
+				self.dispatchEvent(wpgmzaEvent);
+			});
+
+			google.maps.event.addListener(this.googleMap.getStreetView(), "pov_changed", function(){
+				var wpgmzaEvent = new WPGMZA.Event("streetview_pov_changed");
+
+				const pov = this.getPov();
+				if(pov){
+					wpgmzaEvent.pov = {
+						heading: pov.heading,
+						pitch: pov.pitch
+					};
+				}	
+
+				wpgmzaEvent.visible = this.getVisible();
+
+				self.dispatchEvent(wpgmzaEvent);
+			});
+		}
 		
 		// Dispatch event
 		if(!WPGMZA.isProVersion())
@@ -79,6 +107,9 @@ jQuery(function($) {
 			
 			this.dispatchEvent("created");
 			WPGMZA.events.dispatchEvent({type: "mapcreated", map: this});
+			
+			// Legacy event
+			$(this.element).trigger("wpgooglemaps_loaded");
 		}
 	}
 	
@@ -95,6 +126,53 @@ jQuery(function($) {
 	}
 	WPGMZA.GoogleMap.prototype.constructor = WPGMZA.GoogleMap;
 	
+	WPGMZA.GoogleMap.parseThemeData = function(raw)
+	{
+		var json;
+		
+		try{
+			json = JSON.parse(raw);	// Try to parse strict JSON
+		}catch(e) {
+			var str = raw;
+			
+			str = str.replace(/\\'/g, '\'');
+			str = str.replace(/\\"/g, '"');
+			str = str.replace(/\\0/g, '\0');
+			str = str.replace(/\\\\/g, '\\');
+			
+			try{
+				json = JSON.parse(str);
+			}catch(e) {
+				console.warn("Couldn't parse theme data");
+				return [];
+			}
+		}
+
+		/* As of 2023-04-28 Google Maps themes must contain array with each item being a defined object. This means older theme definitions
+		 * will cause initialization issues as they may contain only keyname like ["visibility", "weight"] 
+		 * 
+		 * We will attempt to catch these and return the default theme instead of breaking the map 
+		*/
+		if(json instanceof Array){
+			try{
+				for(let data of json){
+					if(!(data instanceof Object)){
+						/* This key is not an object, it's safe to assume the theme has been corrupted */
+						return [];
+					}
+				}
+			} catch (ex){
+				/* Loop failed, for validation, return default */
+				return [];
+			}
+		} else {
+			/* Not array, something failed, default */
+			return [];
+		}
+		
+		return json;
+	}
+	
 	/**
 	 * Creates the Google Maps map
 	 * @return void
@@ -104,31 +182,50 @@ jQuery(function($) {
 		var self = this;
 		var options = this.settings.toGoogleMapsOptions();
 		
+		options = this.extendNativeConfig(options);
+		
 		this.googleMap = new google.maps.Map(this.engineElement, options);
 		
 		google.maps.event.addListener(this.googleMap, "bounds_changed", function() { 
 			self.onBoundsChanged();
 		});
-		
-		if(this.settings.bicycle == 1)
+
+		if(this.settings.bicycle == 1){
 			this.enableBicycleLayer(true);
-		if(this.settings.traffic == 1)
+		}
+
+		if(this.settings.traffic == 1){
 			this.enableTrafficLayer(true);
-		if(this.settings.transport == 1)
+		}
+
+		if(this.settings.transport_layer){
 			this.enablePublicTransportLayer(true);
-		this.showPointsOfInterest(this.settings.show_points_of_interest);
+		}
+
+		if(this.settings.enable_scale_control){
+			this.enableScaleControl(true);
+		}
+
+		this.showPointsOfInterest(this.settings.wpgmza_show_point_of_interest);
 		
 		// Move the loading wheel into the map element (it has to live outside in the HTML file because it'll be overwritten by Google otherwise)
 		$(this.engineElement).append($(this.element).find(".wpgmza-loader"));
 	}
 	
-	WPGMZA.GoogleMap.prototype.setOptions = function(options)
+	WPGMZA.GoogleMap.prototype.setOptions = function(options, initializing)
 	{
 		Parent.prototype.setOptions.call(this, options);
 		
-		var converted = $.extend(options, this.settings.toGoogleMapsOptions());
+		if(options.scrollwheel)
+			delete options.scrollwheel;	// NB: Delete this when true, scrollwheel: true breaks gesture handling
 		
-		//this.googleMap.setOptions(converted);
+		if(!initializing)
+		{
+			this.googleMap.setOptions(options);
+			return;
+		}
+		
+		var converted = $.extend(options, this.settings.toGoogleMapsOptions());
 		
 		var clone = $.extend({}, converted);
 		if(!clone.center instanceof google.maps.LatLng && (clone.center instanceof WPGMZA.LatLng || typeof clone.center == "object"))
@@ -136,6 +233,30 @@ jQuery(function($) {
 				lat: parseFloat(clone.center.lat),
 				lng: parseFloat(clone.center.lng)
 			};
+		
+		if(this.settings.hide_point_of_interest){
+			var noPoi = {
+				featureType: "poi",
+				elementType: "labels",
+				stylers: [
+					{
+						visibility: "off"
+					}
+				]
+			};
+			
+			if(!clone.styles)
+				clone.styles = [];
+			
+			clone.styles.push(noPoi);
+		}
+
+		if(WPGMZA.settings && WPGMZA.settings.googleMarkerMode && WPGMZA.settings.googleMarkerMode === WPGMZA.GoogleMarker.MARKER_MODE_ADVANCED){
+			/* Advanced Marker Module - Disable local styles */
+			if(clone.styles){
+				delete clone.styles;
+			}
+		}
 		
 		this.googleMap.setOptions(clone);
 	}
@@ -220,6 +341,20 @@ jQuery(function($) {
 		Parent.prototype.removeCircle.call(this, circle);
 	}
 	
+	WPGMZA.GoogleMap.prototype.addRectangle = function(rectangle)
+	{
+		rectangle.googleRectangle.setMap(this.googleMap);
+		
+		Parent.prototype.addRectangle.call(this, rectangle);
+	}
+	
+	WPGMZA.GoogleMap.prototype.removeRectangle = function(rectangle)
+	{
+		rectangle.googleRectangle.setMap(null);
+		
+		Parent.prototype.removeRectangle.call(this, rectangle);
+	}
+	
 	/**
 	 * Delegate for google maps getCenter
 	 * @return void
@@ -284,36 +419,41 @@ jQuery(function($) {
 		if(isNaN(value))
 			throw new Error("Value must not be NaN");
 		
-		return this.googleMap.setZoom(value);
+		return this.googleMap.setZoom(parseInt(value));
 	}
 	
 	/**
 	 * Gets the bounds
 	 * @return object
 	 */
-	WPGMZA.GoogleMap.prototype.getBounds = function()
-	{
-		var bounds = this.googleMap.getBounds();
-		var northEast = bounds.getNorthEast();
-		var southWest = bounds.getSouthWest();
+	WPGMZA.GoogleMap.prototype.getBounds = function() {
 		
 		var nativeBounds = new WPGMZA.LatLngBounds({});
-		
-		nativeBounds.north = northEast.lat();
-		nativeBounds.south = southWest.lat();
-		nativeBounds.west = southWest.lng();
-		nativeBounds.east = northEast.lng();
-		
-		// Backward compatibility
-		nativeBounds.topLeft = {
-			lat: northEast.lat(),
-			lng: southWest.lng()
-		};
-		
-		nativeBounds.bottomRight = {
-			lat: southWest.lat(),
-			lng: northEast.lng()
-		};
+
+		try{
+			var bounds = this.googleMap.getBounds();
+			var northEast = bounds.getNorthEast();
+			var southWest = bounds.getSouthWest();
+			
+			
+			nativeBounds.north = northEast.lat();
+			nativeBounds.south = southWest.lat();
+			nativeBounds.west = southWest.lng();
+			nativeBounds.east = northEast.lng();
+			
+			// Backward compatibility
+			nativeBounds.topLeft = {
+				lat: northEast.lat(),
+				lng: southWest.lng()
+			};
+			
+			nativeBounds.bottomRight = {
+				lat: southWest.lat(),
+				lng: northEast.lng()
+			};
+		} catch (ex){
+			/* Just return a default, instead of throwing an error */
+		}
 		
 		return nativeBounds;
 	}
@@ -398,15 +538,35 @@ jQuery(function($) {
 	 * @return void
 	 */
 	WPGMZA.GoogleMap.prototype.enablePublicTransportLayer = function(enable)
-	{
+	{		
 		if(!this.publicTransportLayer)
 			this.publicTransportLayer = new google.maps.TransitLayer();
-		
+				
 		this.publicTransportLayer.setMap(
 			enable ? this.googleMap : null
 		);
 	}
 	
+	/**
+	 * Enables / disables the scale control bar
+	 * @param enable boolean, enable or not
+	 * @return void
+	 */
+	WPGMZA.GoogleMap.prototype.enableScaleControl = function(enable)
+	{
+		const units = (this.settings.store_locator_distance == WPGMZA.Distance.MILES)
+			? google.maps.ScaleControlStyle.IMPERIAL
+			: google.maps.ScaleControlStyle.METRIC;
+
+		this.googleMap.setOptions({
+			scaleControl: enable,
+			scaleControlOptions: {
+				style: units,
+				position: google.maps.ControlPosition.BOTTOM_LEFT
+			}
+		});
+	}
+
 	/**
 	 * Shows / hides points of interest
 	 * @param show boolean, enable or not
@@ -414,7 +574,7 @@ jQuery(function($) {
 	 */
 	WPGMZA.GoogleMap.prototype.showPointsOfInterest = function(show)
 	{
-		// TODO: This will bug the front end because there is textarea with theme data
+		// TODO: This will bug the front end because there is no textarea with theme data
 		var text = $("textarea[name='theme_data']").val();
 		
 		if(!text)
@@ -528,5 +688,88 @@ jQuery(function($) {
 			return;
 		google.maps.event.trigger(this.googleMap, "resize");
 	}
+
+	WPGMZA.GoogleMap.prototype.enableAllInteractions = function()
+	{	
+		var options = {};
+
+		options.scrollwheel				= true;
+		options.draggable				= true;
+		options.disableDoubleClickZoom	= false;
+		
+		this.googleMap.setOptions(options);
+	}
+
+	WPGMZA.GoogleMap.prototype.openStreetView = function(options){
+		if(this.googleMap.getStreetView()){
+			if(options){
+				if(options.position && options.position instanceof WPGMZA.LatLng){
+					this.googleMap.getStreetView().setPosition(options.position.toGoogleLatLng());
+				}
+
+				if(options.heading || options.pitch){
+					const pov = {};
+					if(options.heading){
+						pov.heading = parseFloat(options.heading);
+					}
+
+					if(options.pitch){
+						pov.pitch = parseFloat(options.pitch);
+					}
+
+					this.googleMap.getStreetView().setPov(pov);
+				}
+			}
+			this.googleMap.getStreetView().setVisible(true);
+		}
+	}
 	
+	WPGMZA.GoogleMap.prototype.closeStreetView = function(){
+		if(this.googleMap.getStreetView()){
+			this.googleMap.getStreetView().setVisible(false);
+		}
+	}
+
+	/**
+	 * Override default map isFullScreen method for Google Maps
+	 * 
+	 * This allows us to check the first child div's height, instead of the container.
+	 * 
+	 * OpenLayers sets the container to fullscreen, Google sets their nested div instead
+	 * 
+	 * @returns bool
+	 */
+	WPGMZA.GoogleMap.prototype.isFullScreen = function(){
+		let fullscreen = WPGMZA.Map.prototype.isFullScreen.call(this);
+
+		if(!fullscreen && WPGMZA.isFullScreen()){
+			if(parseInt(window.screen.height) === parseInt(this.element.firstChild.offsetHeight)){
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Override the map on Fullscreen change method, this allows us to move embedded `stacks` into the main map div to allow them to be visible 
+	 * as part of the fullscreen display 
+	 * 
+	 * @param bool fullscreen Is this map fullscreen 
+	 * 
+	 * @return void
+	 */
+	WPGMZA.GoogleMap.prototype.onFullScreenChange = function(fullscreen){
+		Parent.prototype.onFullScreenChange.call(this, fullscreen);
+		
+		if(fullscreen && !this._stackedComponentsMoved){
+			if(this.element.firstChild){
+				const innerContainer = this.element.firstChild;
+				$(this.element).find('.wpgmza-inner-stack').each(function(index, element){
+					$(element).appendTo(innerContainer);
+				});
+			
+				this._stackedComponentsMoved = true;
+			}
+		}
+	}
 });

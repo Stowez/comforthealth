@@ -2,7 +2,7 @@
 
 //For backwards compatibility, load wordpress if it hasn't been loaded yet
 //Will be used if this file is being called directly
-if ( ! class_exists( 'RGForms' ) ) {
+if ( ! class_exists( 'GFForms' ) ) {
 	for ( $i = 0; $i < $depth = 10; $i ++ ) {
 		$wp_root_path = str_repeat( '../', $i );
 
@@ -22,17 +22,28 @@ if ( ! GFCommon::current_user_can_any( array( 'gravityforms_edit_forms', 'gravit
 	die( esc_html__( "You don't have adequate permission to preview forms.", 'gravityforms' ) );
 }
 
-// Load form display class.
-require_once( GFCommon::get_base_path() . '/form_display.php' );
-
 // Get form ID.
 $form_id = absint( rgget( 'id' ) );
 
-// Get form object.
-$form = RGFormsModel::get_form_meta( $_GET['id'] );
+/**
+ * Fires when a Form Preview is loaded.
+ *
+ * The hook fires when a Form Preview is initialized and before it is rendered.
+ *
+ * @since 2.5
+ * @since 2.9 Added the $form_id parameter.
+ */
+do_action( 'gform_preview_init', $form_id );
 
-// Determine if we're loading minified scripts.
-$min = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG || isset( $_GET['gform_debug'] ) ? '' : '.min';
+// Load form display class.
+require_once( GFCommon::get_base_path() . '/form_display.php' );
+
+// Get form object.
+$form       = RGFormsModel::get_form_meta( rgget( 'id' ) );
+$form_title = rgar( $form, 'title', __( 'Untitled Form', 'gravityforms' ) );
+
+/* translators: Form preview page title. 1: form title, 2: site title. */
+$admin_title = sprintf( __( '%1$s &lsaquo; Form Preview - Gravity Forms &lsaquo; %2$s &#8212; WordPress', 'gravityforms' ), esc_html( $form_title ), esc_html( get_bloginfo( 'name' ) ) );
 
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -41,7 +52,7 @@ $min = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG || isset( $_GET['gform_debug'] 
 	<meta http-equiv="Content-type" content="text/html; charset=utf-8" />
 	<meta http-equiv="Imagetoolbar" content="No" />
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title><?php esc_html_e( 'Form Preview', 'gravityforms' ) ?></title>
+	<title><?php echo esc_html( $admin_title ); ?></title>
 	<?php
 
 		// If form exists, enqueue its scripts.
@@ -53,25 +64,58 @@ $min = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG || isset( $_GET['gform_debug'] 
 
 		wp_print_head_scripts();
 
-		$styles = apply_filters( 'gform_preview_styles', array(), $form );
+		$styles = array();
+
+		/**
+		 * Filters Form Preview Styles.
+		 *
+		 * This filter modifies the enqueued styles for the Form Preview. Any handles returned in the array
+		 * will be loaded in the Preview header (if they've been registered with wp_register_style).
+		 *
+		 * @since 2.4
+		 *
+		 * @param array $styles An empty array representing the currently-active styles.
+		 * @param array $form An array representing the current Form.
+		 *
+		 * @return array An array of handles to enqueue in the header.
+		 */
+		$styles = apply_filters( 'gform_preview_styles', $styles, $form );
+
 		if ( ! empty( $styles ) ) {
 			wp_print_styles( $styles );
 		}
-	?>
 
+		/**
+		 * Fire before the closing <head> tag of the preview page.
+		 *
+		 * @since 2.4.19
+		 *
+		 * @param int $form_id The ID of the form currently being previewed.
+		 */
+		do_action( 'gform_preview_header', $form_id );
+
+	?>
 </head>
-<body>
+<body <?php body_class(); ?>>
+<?php
+/**
+ * Fire after the opening <body> tag of the preview page.
+ *
+ * @since 2.4.19
+ *
+ * @param int $form_id The ID of the form currently being previewed.
+ */
+do_action( 'gform_preview_body_open', $form_id );
+?>
 <div id="preview_top">
 	<div id="preview_hdr">
 
 		<div>
-
-			<span class="toggle_helpers">
-				<input type="checkbox" name="showgrid" id="showgrid" value="Y" class="show-grid-input" /><label for="showgrid" class="show-grid-label"><?php esc_html_e( 'display grid', 'gravityforms' ) ?></label>
-				<input type="checkbox" name="showme" id="showme" value="Y" class="show-helpers-input" /><label for="showme" class="show-helpers-label"><?php esc_html_e( 'show structure', 'gravityforms' ) ?></label>
-			</span>
-
-			<h2><?php esc_html_e( 'Form Preview', 'gravityforms' ) ?> : ID <?php echo $form_id; ?></h2>
+			<!-- Visually hidden page title for screen readers -->
+			<h1 style="position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden;">
+				<?php echo esc_html__( $admin_title );?>
+			</h1>
+			<h2><?php esc_html_e( 'Form Preview', 'gravityforms' ) ?> : ID <?php echo esc_html( $form_id ); ?></h2>
 		</div>
 	</div>
 	<div id="preview_note" class="preview_notice">
@@ -90,13 +134,10 @@ $min = defined( 'SCRIPT_DEBUG' ) && SCRIPT_DEBUG || isset( $_GET['gform_debug'] 
 	<span class="rule50"></span>
 	<span class="rule66"></span>
 	<span class="rule75"></span>
-	<?php echo RGForms::get_form( $form_id, true, true, true ); ?>
+	<?php echo GFForms::get_form( $form_id, true, true, true ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 </div>
 <div id="browser_size_info"></div>
 
-<!-- load up the styles -->
-
-<link rel='stylesheet' href='<?php echo GFCommon::get_base_url() ?>/css/reset<?php echo $min; ?>.css' type='text/css' />
 <?php
 
 wp_print_footer_scripts();
@@ -108,10 +149,6 @@ wp_print_footer_scripts();
  */
 do_action( 'gform_preview_footer', $form_id );
 ?>
-
-<?php if ( is_rtl() ) { ?><link rel='stylesheet' href='<?php echo GFCommon::get_base_url() ?>/css/rtl<?php echo $min; ?>.css' type='text/css' /><?php } ?>
-<link rel='stylesheet' href='<?php echo GFCommon::get_base_url() ?>/css/preview<?php echo $min; ?>.css' type='text/css' />
-
 
 </body>
 </html>

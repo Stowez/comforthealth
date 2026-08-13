@@ -8,13 +8,11 @@ jQuery(function($) {
 	
 	var Parent;
 	
-	WPGMZA.OLPolygon = function(row, olFeature)
+	WPGMZA.OLPolygon = function(options, olFeature)
 	{
 		var self = this;
 		
-		Parent.call(this, row, olFeature);
-		
-		this.olStyle = new ol.style.Style();
+		Parent.call(this, options, olFeature);
 		
 		if(olFeature)
 		{
@@ -24,17 +22,16 @@ jQuery(function($) {
 		{
 			var coordinates = [[]];
 			
-			if(row && row.points)
+			if(options && options.polydata)
 			{
-				var paths = this.parseGeometry(row.points);
+				var paths = this.parseGeometry(options.polydata);
 				
-				for(var i = 0; i < paths.length; i++)
+				// NB: We have to close the polygon in OpenLayers for the edit interaction to pick up on the last edge
+				for(var i = 0; i <= paths.length; i++)
 					coordinates[0].push(ol.proj.fromLonLat([
-						parseFloat(paths[i].lng),
-						parseFloat(paths[i].lat)
+						parseFloat(paths[i % paths.length].lng),
+						parseFloat(paths[i % paths.length].lat)
 					]));
-				
-				this.olStyle = new ol.style.Style(this.getStyleFromSettings());
 			}
 			
 			this.olFeature = new ol.Feature({
@@ -45,13 +42,16 @@ jQuery(function($) {
 		this.layer = new ol.layer.Vector({
 			source: new ol.source.Vector({
 				features: [this.olFeature]
-			}),
-			style: this.olStyle
+			})
 		});
 		
 		this.layer.getSource().getFeatures()[0].setProperties({
-			wpgmzaPolygon: this
+			wpgmzaPolygon: this,
+			wpgmzaFeature: this
 		});
+		
+		if(options)
+			this.setOptions(options);
 	}
 	
 	if(WPGMZA.isProVersion())
@@ -61,43 +61,11 @@ jQuery(function($) {
 	
 	WPGMZA.OLPolygon.prototype = Object.create(Parent.prototype);
 	WPGMZA.OLPolygon.prototype.constructor = WPGMZA.OLPolygon;
-
-	WPGMZA.OLPolygon.prototype.getStyleFromSettings = function()
-	{
-		var params = {};
-				
-		if(this.settings.strokeOpacity)
-			params.stroke = new ol.style.Stroke({
-				color: WPGMZA.hexOpacityToRGBA(this.settings.strokeColor, this.settings.strokeOpacity)
-			});
-		
-		if(this.settings.fillOpacity)
-			params.fill = new ol.style.Fill({
-				color: WPGMZA.hexOpacityToRGBA(this.settings.fillColor, this.settings.fillOpacity)
-			});
-			
-		return params;
-	}
 	
-	WPGMZA.OLPolygon.prototype.updateStyleFromSettings = function()
+	WPGMZA.OLPolygon.prototype.getGeometry = function()
 	{
-		// Re-create the style - working on it directly doesn't cause a re-render
-		var params = this.getStyleFromSettings();
-		this.olStyle = new ol.style.Style(params);
-		this.layer.setStyle(this.olStyle);
-	}
-	
-	WPGMZA.OLPolygon.prototype.setEditable = function(editable)
-	{
-		
-	}
-	
-	WPGMZA.OLPolygon.prototype.toJSON = function()
-	{
-		var result = Parent.prototype.toJSON.call(this);
 		var coordinates = this.olFeature.getGeometry().getCoordinates()[0];
-		
-		result.points = [];
+		var result = [];
 		
 		for(var i = 0; i < coordinates.length; i++)
 		{
@@ -106,10 +74,23 @@ jQuery(function($) {
 				lat: lonLat[1],
 				lng: lonLat[0]
 			};
-			result.points.push(latLng);
+			result.push(latLng);
 		}
 		
 		return result;
+	}
+	
+	WPGMZA.OLPolygon.prototype.setVisible = function(visible)
+	{
+		this.layer.setVisible(visible ? true : false);
+	}
+
+	WPGMZA.OLPolygon.prototype.setOptions = function(options)
+	{
+		Parent.prototype.setOptions.apply(this, arguments);
+		
+		if("editable" in options)
+			WPGMZA.OLFeature.setInteractionsOnFeature(this, options.editable);
 	}
 	
 });

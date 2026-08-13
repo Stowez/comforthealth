@@ -15,7 +15,7 @@ var GFFrontendFeeds = function( args ) {
 		self.triggerInputIds = self.getTriggerInputIds( self.options.feeds );
 
 		self.activeFeeds = [];
-		
+
 		self.evaluateFeeds();
 
 		self.bindEvents();
@@ -25,16 +25,28 @@ var GFFrontendFeeds = function( args ) {
 	self.bindEvents = function() {
 
 		gform.addAction( 'gform_input_change', function( elem, formId, inputId ) {
+			gform.logger.log( 'GFFrontendFeeds: gform_input_change event triggered. formId ' + formId + ', inputId ' + inputId );
 
 			var fieldId = parseInt( inputId ) + '';
 			var isTriggeredInput = $.inArray( inputId, self.triggerInputIds ) !== -1 || $.inArray( fieldId , self.triggerInputIds ) !== -1 ;
 
 			if( self.options.formId == formId && isTriggeredInput ) {
+				gform.logger.log( 'GFFrontendFeeds: Evaluating feeds. self.options.formId=' + self.options.formId + ', isTriggeredInput=' + isTriggeredInput + ', triggerInputIds=' + self.triggerInputIds.join( ',' ) );
 				self.evaluateFeeds();
+			} else {
+				gform.logger.log( 'GFFrontendFeeds: Bypassing feed evaluation. self.options.formId=' + self.options.formId + ', isTriggeredInput=' + isTriggeredInput + ', triggerInputIds=' + self.triggerInputIds.join( ',' ) );
 			}
 		} );
 
 	};
+
+	self.saveToState = function() {
+		const feeds = self.options.feeds.map(({ feedId, isActivated, transactionType }) => ({ feedId, isActivated, transactionType }));
+
+		gform.logger.log( 'GFFrontendFeeds: Saving feeds to state: ' + JSON.stringify( feeds ) );
+
+		gform.state.set( self.options.formId, 'feeds', self.options.feeds );
+	}
 
 	self.evaluateFeeds = function() {
 
@@ -63,10 +75,11 @@ var GFFrontendFeeds = function( args ) {
 		 * @param int   $formId    The form id.
 		 */
 		gform.doAction( 'gform_frontend_feeds_evaluated', self.options.feeds, self.options.formId, self );
-		gform.doAction( 'gform_frontend_feeds_evaluated_{0}'.format( self.options.formId ), self.options.feeds, self.options.formId, self );
-		gform.doAction( 'gform_{0}_frontend_feeds_evaluated'.format( feed.addonSlug ), self.options.feeds, self.options.formId, self );
-		gform.doAction( 'gform_{0}_frontend_feeds_evaluated_{0}'.format( feed.addonSlug, self.options.formId ), self.options.feeds, self.options.formId, self );
+		gform.doAction( 'gform_frontend_feeds_evaluated_{0}'.gformFormat( self.options.formId ), self.options.feeds, self.options.formId, self );
+		gform.doAction( 'gform_{0}_frontend_feeds_evaluated'.gformFormat( feed.addonSlug ), self.options.feeds, self.options.formId, self );
+		gform.doAction( 'gform_{0}_frontend_feeds_evaluated_{0}'.gformFormat( feed.addonSlug, self.options.formId ), self.options.feeds, self.options.formId, self );
 
+		self.saveToState();
 	};
 
 	self.evaluateFeed = function( feed, formId ) {
@@ -164,9 +177,9 @@ var GFFrontendFeeds = function( args ) {
 			 */
 
 			gform.doAction( 'gform_frontend_feed_activated', feed, self.options.formId );
-			gform.doAction( 'gform_frontend_feed_activated_{0}'.format( self.options.formId ), feed, self.options.formId );
-			gform.doAction( 'gform_{0}_frontend_feed_activated'.format( feed.addonSlug ), feed, self.options.formId );
-			gform.doAction( 'gform_{0}_frontend_feed_activated_{0}'.format( feed.addonSlug, self.options.formId ), feed, self.options.formId );
+			gform.doAction( 'gform_frontend_feed_activated_{0}'.gformFormat( self.options.formId ), feed, self.options.formId );
+			gform.doAction( 'gform_{0}_frontend_feed_activated'.gformFormat( feed.addonSlug ), feed, self.options.formId );
+			gform.doAction( 'gform_{0}_frontend_feed_activated_{0}'.gformFormat( feed.addonSlug, self.options.formId ), feed, self.options.formId );
 
 			if( feed.isSingleFeed ) {
 				self.deactivateFeed( self.getFeedsByAddon( feed.addonSlug, feed ) );
@@ -202,9 +215,9 @@ var GFFrontendFeeds = function( args ) {
 			 * @param int   $formId    The form id.
 			 */
 			gform.doAction( 'gform_frontend_feed_deactivated', feed, self.options.formId );
-			gform.doAction( 'gform_frontend_feed_deactivated_{0}'.format( self.options.formId ), feed, self.options.formId );
-			gform.doAction( 'gform_{0}_frontend_feed_deactivated'.format( feed.addonSlug ), feed, self.options.formId );
-			gform.doAction( 'gform_{0}_frontend_feed_deactivated_{0}'.format( feed.addonSlug, self.options.formId ), feed, self.options.formId );
+			gform.doAction( 'gform_frontend_feed_deactivated_{0}'.gformFormat( self.options.formId ), feed, self.options.formId );
+			gform.doAction( 'gform_{0}_frontend_feed_deactivated'.gformFormat( feed.addonSlug ), feed, self.options.formId );
+			gform.doAction( 'gform_{0}_frontend_feed_deactivated_{0}'.gformFormat( feed.addonSlug, self.options.formId ), feed, self.options.formId );
 
 		}
 

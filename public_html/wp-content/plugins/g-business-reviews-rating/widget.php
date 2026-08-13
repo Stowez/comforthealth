@@ -10,6 +10,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 	private
 		$alias = NULL,
 		$reference = NULL,
+		$first = NULL,
 		$api_key = NULL,
 		$place_id = NULL,
 		$rating = NULL,
@@ -17,6 +18,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 		$business_icon = NULL,
 		$demo = NULL,
 		$user_ratings_total = NULL,
+		$more = NULL,
 		$theme = NULL,
 		$result = array(),
 		$data = array(),
@@ -24,14 +26,19 @@ class google_business_reviews_rating_widget extends WP_Widget
 		$reviews_filtered = array(),
 		$review_sort_option = NULL,
 		$review_sort_options = array(),
-		$reviews_themes = array();
+		$languages = array(),
+		$reviews_themes = array(),
+		$administrator = FALSE,
+		$editor = FALSE,
+		$plugin_url = NULL;
 	
     public function __construct()
     {
 		$this->alias = preg_replace('/^(.+)[_-][^_-]+$/', '$1', __CLASS__);
 		$this->reference = preg_replace('/[^0-9a-z-]/', '-', $this->alias);
+		$this->first = NULL;
 		
-        parent::__construct($this->alias, __('Reviews and Rating', 'g-business-reviews-rating'), array(
+        parent::__construct($this->alias, __('Reviews and Rating - Google Reviews', 'g-business-reviews-rating'), array(
             'description' => __('Have your rating and a review showing in your sidebar', 'g-business-reviews-rating'),
 			'classname' => $this->reference . '-widget'
         ));
@@ -112,38 +119,6 @@ class google_business_reviews_rating_widget extends WP_Widget
 				'name' => 'Random Shuffle'
 			)
 		);
-
-		$this->reviews_themes = array(
-			'light' => __('Light Background', 'g-business-reviews-rating'),
-			'light fonts' => __('Light Background with Fonts', 'g-business-reviews-rating'),
-			'light center' => __('Centered, Light Background', 'g-business-reviews-rating'),
-			'light center fonts' => __('Centered, Light Background with Fonts', 'g-business-reviews-rating'),
-			'light narrow' => __('Narrow, Light Background', 'g-business-reviews-rating'),
-			'light narrow fonts' => __('Narrow, Light Background with Fonts', 'g-business-reviews-rating'),
-			'light center narrow' => __('Narrow, Centered, Light Background', 'g-business-reviews-rating'),
-			'light center narrow fonts' => __('Narrow, Centered, Light Background with Fonts', 'g-business-reviews-rating'),
-			'dark' => __('Dark Background', 'g-business-reviews-rating'),
-			'dark fonts' => __('Dark Background with Fonts', 'g-business-reviews-rating'),
-			'dark center' => __('Centered, Dark Background', 'g-business-reviews-rating'),
-			'dark center fonts' => __('Centered, Dark Background with Fonts', 'g-business-reviews-rating'),
-			'dark narrow' => __('Narrow, Dark Background', 'g-business-reviews-rating'),
-			'dark narrow fonts' => __('Narrow, Dark Background with Fonts', 'g-business-reviews-rating'),
-			'dark center narrow' => __('Narrow, Centered, Dark Background', 'g-business-reviews-rating'),
-			'dark center narrow fonts' => __('Narrow, Centered, Dark Background with Fonts', 'g-business-reviews-rating'),
-			'badge light' => __('Badge, Light Background', 'g-business-reviews-rating'),
-			'badge light fonts' => __('Badge, Light Background with Fonts', 'g-business-reviews-rating'),
-			'badge light narrow' => __('Narrow Badge, Light Background with Fonts', 'g-business-reviews-rating'),
-			'badge light narrow fonts' => __('Narrow Badge, Light Background with Fonts', 'g-business-reviews-rating'),
-			'badge dark' => __('Badge, Dark Background', 'g-business-reviews-rating'),
-			'badge dark fonts' => __('Badge, Dark Background with Fonts', 'g-business-reviews-rating'),
-			'badge dark narrow' => __('Narrow Badge, Dark Background', 'g-business-reviews-rating'),
-			'badge dark narrow fonts' => __('Narrow Badge, Dark Background with Fonts', 'g-business-reviews-rating'),
-			'badge tiny light' => __('Tiny Badge, Light Background', 'g-business-reviews-rating'),
-			'badge tiny light fonts' => __('Tiny Badge, Light Background with Fonts', 'g-business-reviews-rating'),
-			'badge tiny dark' => __('Tiny Badge, Dark Background', 'g-business-reviews-rating'),
-			'badge tiny dark fonts' => __('Tiny Badge, Dark Background with Fonts', 'g-business-reviews-rating')
-		);
-		
 		$this->languages = array(
 			'af' => 'Afrikaans',
 			'sq' => 'Albanian',
@@ -227,8 +202,121 @@ class google_business_reviews_rating_widget extends WP_Widget
 			'vi' => 'Vietnamese',
 			'zu' => 'Zulu'
 		);
+		$this->reviews_themes = array(
+			'light' => __('Light Background', 'g-business-reviews-rating-extended'),
+			'light fonts' => __('Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'light tile' => __('Light Background, Tiled', 'g-business-reviews-rating-extended'),
+			'light fonts tile' => __('Light Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light center' => __('Centered, Light Background', 'g-business-reviews-rating-extended'),
+			'light center fonts' => __('Centered, Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'light center tile' => __('Centered, Light Background, Tiled', 'g-business-reviews-rating-extended'),
+			'light center fonts tile' => __('Centered, Light Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light narrow' => __('Narrow, Light Background', 'g-business-reviews-rating-extended'),
+			'light narrow fonts' => __('Narrow, Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'light narrow tile' => __('Narrow, Light Background, Tiled', 'g-business-reviews-rating-extended'),
+			'light narrow fonts tile' => __('Narrow, Light Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light center narrow' => __('Narrow, Centered, Light Background', 'g-business-reviews-rating-extended'),
+			'light center narrow fonts' => __('Narrow, Centered, Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'light center narrow tile' => __('Narrow, Centered, Light Background, Tiled', 'g-business-reviews-rating-extended'),
+			'light center narrow fonts tile' => __('Narrow, Centered, Light Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark' => __('Dark Background', 'g-business-reviews-rating-extended'),
+			'dark fonts' => __('Dark Background with Fonts', 'g-business-reviews-rating-extended'),
+			'dark tile' => __('Dark Background, Tiled', 'g-business-reviews-rating-extended'),
+			'dark fonts tile' => __('Dark Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark center' => __('Centered, Dark Background', 'g-business-reviews-rating-extended'),
+			'dark center fonts' => __('Centered, Dark Background with Fonts', 'g-business-reviews-rating-extended'),
+			'dark center tile' => __('Centered, Dark Background, Tiled', 'g-business-reviews-rating-extended'),
+			'dark center fonts tile' => __('Centered, Dark Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark narrow' => __('Narrow, Dark Background', 'g-business-reviews-rating-extended'),
+			'dark narrow fonts' => __('Narrow, Dark Background with Fonts', 'g-business-reviews-rating-extended'),
+			'dark narrow tile' => __('Narrow, Dark Background, Tiled', 'g-business-reviews-rating-extended'),
+			'dark narrow fonts tile' => __('Narrow, Dark Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark center narrow' => __('Narrow, Centered, Dark Background', 'g-business-reviews-rating-extended'),
+			'dark center narrow fonts' => __('Narrow, Centered, Dark Background with Fonts', 'g-business-reviews-rating-extended'),
+			'dark center narrow tile' => __('Narrow, Centered, Dark Background, Tiled', 'g-business-reviews-rating-extended'),
+			'dark center narrow fonts tile' => __('Narrow, Centered, Dark Background, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble' => __('Light Background, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'light bubble fonts' => __('Light, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble tile' => __('Light Background, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble fonts tile' => __('Light, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill' => __('Light Background, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'light bubble fill fonts' => __('Light, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill tile' => __('Light Background, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble fill fonts tile' => __('Light, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble center' => __('Centered, Light, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'light bubble center fonts' => __('Centered, Light, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble center tile' => __('Centered, Light, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble center fonts tile' => __('Centered, Light, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill center' => __('Centered, Light, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'light bubble fill center fonts' => __('Centered, Light, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill center tile' => __('Centered, Light, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble fill center fonts tile' => __('Centered, Light, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble narrow' => __('Narrow, Light, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'light bubble narrow fonts' => __('Narrow, Light, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble narrow tile' => __('Narrow, Light, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble narrow fonts tile' => __('Narrow, Light, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill narrow' => __('Narrow, Light, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'light bubble fill narrow fonts' => __('Narrow, Light, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill narrow tile' => __('Narrow, Light, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble fill narrow fonts tile' => __('Narrow, Light, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble center narrow' => __('Narrow, Centered, Light, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'light bubble center narrow fonts' => __('Narrow, Centered, Light, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble center narrow tile' => __('Narrow, Centered, Light, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble center narrow fonts tile' => __('Narrow, Centered, Light, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill center narrow' => __('Narrow, Centered, Light, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'light bubble fill center narrow fonts' => __('Narrow, Centered, Light, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'light bubble fill center narrow tile' => __('Narrow, Centered, Light, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'light bubble fill center narrow fonts tile' => __('Narrow, Centered, Light, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble' => __('Dark, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'dark bubble fonts' => __('Dark, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble tile' => __('Dark, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble fonts tile' => __('Dark, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill' => __('Dark, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill fonts' => __('Dark, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill tile' => __('Dark, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill fonts tile' => __('Dark, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble center' => __('Centered, Dark, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'dark bubble center fonts' => __('Centered, Dark, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble center tile' => __('Centered, Dark, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble center fonts tile' => __('Centered, Dark, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center' => __('Centered, Dark, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center fonts' => __('Centered, Dark, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center tile' => __('Centered, Dark, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center fonts tile' => __('Centered, Dark, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble narrow' => __('Narrow, Dark, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'dark bubble narrow fonts' => __('Narrow, Dark, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble narrow tile' => __('Narrow, Dark, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble narrow fonts tile' => __('Narrow, Dark, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill narrow' => __('Narrow, Dark, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill narrow fonts' => __('Narrow, Dark, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill narrow tile' => __('Narrow, Dark, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill narrow fonts tile' => __('Narrow, Dark, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble center narrow' => __('Narrow, Centered, Dark, Bubble Outline', 'g-business-reviews-rating-extended'),
+			'dark bubble center narrow fonts' => __('Narrow, Centered, Dark, Bubble Outline with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble center narrow tile' => __('Narrow, Centered, Dark, Bubble Outline, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble center narrow fonts tile' => __('Narrow, Centered, Dark, Bubble Outline, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center narrow' => __('Narrow, Centered, Dark, Bubble Filled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center narrow fonts' => __('Narrow, Centered, Dark, Bubble Filled with Fonts', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center narrow tile' => __('Narrow, Centered, Dark, Bubble Filled, Tiled', 'g-business-reviews-rating-extended'),
+			'dark bubble fill center narrow fonts tile' => __('Narrow, Centered, Dark, Bubble Filled, Tiled with Fonts', 'g-business-reviews-rating-extended'),
+			'badge light' => __('Badge, Light Background', 'g-business-reviews-rating-extended'),
+			'badge light fonts' => __('Badge, Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'badge light narrow' => __('Narrow Badge, Light Background', 'g-business-reviews-rating-extended'),
+			'badge light narrow fonts' => __('Narrow Badge, Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'badge dark' => __('Badge, Dark Background', 'g-business-reviews-rating-extended'),
+			'badge dark fonts' => __('Badge, Dark Background with Fonts', 'g-business-reviews-rating-extended'),
+			'badge dark narrow' => __('Narrow Badge, Dark Background', 'g-business-reviews-rating-extended'),
+			'badge dark narrow fonts' => __('Narrow Badge, Dark Background with Fonts', 'g-business-reviews-rating-extended'),
+			'badge tiny light' => __('Tiny Badge, Light Background', 'g-business-reviews-rating-extended'),
+			'badge tiny light fonts' => __('Tiny Badge, Light Background with Fonts', 'g-business-reviews-rating-extended'),
+			'badge tiny dark' => __('Tiny Badge, Dark Background', 'g-business-reviews-rating-extended'),
+			'badge tiny dark fonts' => __('Tiny Badge, Dark Background with Fonts', 'g-business-reviews-rating-extended')
+		);
+
+		$this->administrator = (function_exists('current_user_can') && current_user_can('manage_options', $this->alias));
+		$this->editor = (!$this->administrator && function_exists('current_user_can') && current_user_can('edit_published_posts', $this->alias) && get_option($this->alias . '_editor', TRUE));
+		$this->plugin_url = (!$this->editor) ? './admin.php?page=' . $this->alias : './options-general.php?page=' . $this->alias . '_settings';
 		
-		$this->plugin_settings_url = './options-general.php?page='.$this->alias.'_settings';
 		$this->demo = get_option($this->alias . '_demo');
 		$this->api_key = get_option($this->alias . '_api_key');
 		$this->place_id = get_option($this->alias . '_place_id');		
@@ -254,6 +342,20 @@ class google_business_reviews_rating_widget extends WP_Widget
 			$this->user_ratings_total = (is_array($this->data) && !empty($this->data) && isset($this->data['user_ratings_total'])) ? intval($this->data['user_ratings_total']) : NULL;
 			$this->reviews = get_option($this->alias . '_reviews');
 			$this->reviews_filtered = $this->reviews;
+			
+			if ((!is_numeric($this->rating) || is_numeric($this->rating) && $this->rating == 0 || $this->user_ratings_total == NULL) && is_array($this->reviews) && !empty($this->reviews))
+			{
+				$this->user_ratings_total = count($this->reviews);
+				$ratings = array();
+				
+				foreach ($this->reviews as $a)
+				{
+					$ratings[] = $a['rating'];
+				}
+				
+				$this->rating = (!empty($ratings)) ? array_sum($ratings)/count($ratings) : 0;
+			}
+			
 			return TRUE;
 		}
 		
@@ -283,7 +385,14 @@ class google_business_reviews_rating_widget extends WP_Widget
 			$count++;
 		}
 		
-		uksort($this->reviews, function ($a, $b) { return $this->reviews[$b]['retrieved'] - ($this->reviews[$b]['order'] * 0.1) - $this->reviews[$a]['retrieved'] - ($this->reviews[$a]['order'] * 0.1); });
+		uksort($this->reviews, function ($a, $b) {
+			if (!isset($this->reviews[$a]) || !isset($this->reviews[$b]))
+			{
+				return 0;
+			}
+
+			return $this->reviews[$b]['retrieved'] - ($this->reviews[$b]['order'] * 0.1) - $this->reviews[$a]['retrieved'] - ($this->reviews[$a]['order'] * 0.1);
+		});
 		$this->reviews_filtered = $this->reviews;
 
         return TRUE;
@@ -303,6 +412,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 		return array(
 			'title' => __('Google Rating', 'g-business-reviews-rating'),
 			'limit' => ($count < 3) ? $count : 3,
+			'view' => NULL,
 			'sort' => NULL,
 			'offset' => 0,
 			'rating_min' => 1,
@@ -315,11 +425,13 @@ class google_business_reviews_rating_widget extends WP_Widget
 			'theme' => NULL,
 			'display_name' => FALSE,
 			'display_icon' => FALSE,
+			'display_vicinity' => FALSE,
 			'display_rating' => TRUE,
 			'display_rating_stars' => TRUE,
 			'display_review_count' => TRUE,
 			'display_reviews' => TRUE,
 			'display_review_text' => TRUE,
+			'display_avatar' => TRUE,
 			'display_view_reviews_button' => FALSE,
 			'display_write_review_button' => FALSE,
 			'display_attribution' => TRUE,
@@ -349,8 +461,9 @@ class google_business_reviews_rating_widget extends WP_Widget
 		}
 		
 		$place_id = (!$this->demo && isset($filters['place_id']) && is_string($filters['place_id']) && strlen($filters['place_id']) >= 20) ? $filters['place_id'] : NULL;
-		$rating_min = ($id == NULL && is_numeric($filters['rating_min']) && $filters['rating_min'] >= 0 && $filters['rating_min'] <= 5) ? intval($filters['rating_min']) : NULL;
-		$rating_max = ($id == NULL && is_numeric($filters['rating_max']) && $filters['rating_max'] >= 1 && $filters['rating_max'] <= 5) ? intval($filters['rating_max']) : NULL;
+		$rating_min = ($id == NULL && is_numeric($filters['rating_min']) && $filters['rating_min'] > 1 && $filters['rating_min'] <= 5) ? intval($filters['rating_min']) : NULL;
+		$rating_max = ($id == NULL && is_numeric($filters['rating_max']) && $filters['rating_max'] >= 1 && $filters['rating_max'] < 5) ? intval($filters['rating_max']) : NULL;
+		$view = ($id == NULL && is_numeric($filters['view']) && $filters['view'] >= 0) ? intval($filters['view']) : NULL;
 		$offset = ($id == NULL && is_numeric($filters['offset']) && $filters['offset'] >= 0) ? intval($filters['offset']) : 0;
 		$limit = ($id == NULL && is_numeric($filters['limit']) && $filters['limit'] >= 0) ? intval($filters['limit']) : NULL;
 		$sort = ($id == NULL && array_key_exists('sort', $filters) && is_string($filters['sort'])) ? preg_replace('/[^\w_-]/', '', $filters['sort']) : NULL;
@@ -362,6 +475,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 		if (!$override)
 		{
 			$limit = (is_numeric($limit)) ? intval($limit) : get_option($this->alias . '_review_limit', NULL);
+			$view = (is_numeric($view)) ? intval($view) : get_option($this->alias . '_review_view', NULL);
 			$sort = (is_string($sort)) ? preg_replace('/[^\w_-]/', '', $sort) : get_option($this->alias . '_review_sort', NULL);
 			$rating_min = (is_numeric($rating_min)) ? intval($rating_min) : get_option($this->alias . '_rating_min', NULL);
 			$rating_max = (is_numeric($rating_max)) ? intval($rating_max) : get_option($this->alias . '_rating_max', NULL);
@@ -374,10 +488,12 @@ class google_business_reviews_rating_widget extends WP_Widget
 		if (!$filters['display_reviews'])
 		{
 			$limit = 0;
+			$view = NULL;
 		}
 		elseif (is_numeric($limit) && $limit == 0)
 		{
 			$display_reviews = FALSE;
+			$view = NULL;
 		}
 		
 		if (!empty($ids))
@@ -412,7 +528,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 				continue;
 			}
 			
-			if (is_numeric($rating_min) && $a['rating'] < $rating_min || is_numeric($rating_max) && $a['rating'] > $rating_max)
+			if (is_numeric($rating_min) && $rating_min > 1 && $a['rating'] < $rating_min || is_numeric($rating_max) && $rating_max < 5 && $a['rating'] > $rating_max)
 			{
 				unset($this->reviews_filtered[$key]);
 				continue;
@@ -500,7 +616,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 		{
 			$this->reviews_filtered = array_splice($this->reviews_filtered, $offset, $limit);
 		}
-
+		
 		return TRUE;
 	}
 	
@@ -584,20 +700,47 @@ class google_business_reviews_rating_widget extends WP_Widget
 				$a['limit'] = 1;
 			}
 		}
+		
+		if (is_numeric($a['view']) && $a['view'] >= 1 && (!is_numeric($a['limit']) && $a['limit'] == NULL || is_numeric($a['limit']) && $a['limit'] > 1))
+		{
+			$a['view'] = (is_numeric($a['limit']) && $a['view'] < $a['limit']) ? intval($a['view']) : 1;
+			$a['loop'] = (isset($a['loop']) && $a['loop']);
+			$a['iterations'] = ($a['loop'] && is_numeric($a['iterations']) && $a['iterations'] >= 0.3 && $a['iterations'] <= 60) ? $a['iterations'] : NULL;
+		}
+		else
+		{
+			$a['view'] = NULL;
+			$a['loop'] = FALSE;
+			$a['iterations'] = NULL;
+		}
 						
 		if ($a['sort'] == 'relevance_desc')
 		{
 			$a['sort'] = NULL;
 		}
 		
-		if (is_numeric($a['rating_max']) && $a['rating_max'] < 1)
+		if (is_numeric($a['rating_max']))
 		{
-			$a['rating_max'] = 1;
+			if ($a['rating_max'] <= 1)
+			{
+				$a['rating_max'] = 1;
+			}
+			elseif ($a['rating_max'] >= 5)
+			{
+				$a['rating_max'] = 5;
+			}
 		}
 		
-		if (is_numeric($a['rating_min']) && $a['rating_min'] < 1)
+		if (is_numeric($a['rating_min']))
 		{
-			$a['rating_min'] = 1;
+			if ($a['rating_min'] <= 1)
+			{
+				$a['rating_min'] = 1;
+			}
+			elseif ($a['rating_min'] >= 5)
+			{
+				$a['rating_min'] = 5;
+			}
 		}
 		
 		if (is_numeric($a['rating_min']) && is_numeric($a['rating_max']) && $a['rating_min'] > $a['rating_max'])
@@ -652,206 +795,263 @@ class google_business_reviews_rating_widget extends WP_Widget
 		wp_enqueue_script(__CLASS__ . '_admin_js');
 	}
 	
-    public function widget($args, $instance)
+    public function widget($args, $data)
     {
 		// Display the widget
 		
-		$html = '';
-		$default_values = $this->default_values();
-        extract($args, EXTR_SKIP);
-        extract($instance, EXTR_SKIP);
-
-		if (count($default_values) > count($instance))
+		$shortcode_parameters = '';
+		$shortcode_arguments = array(
+			'class' => array('widget'),
+			'summary' => array('icon', 'name', 'vicinity', 'rating', 'stars', 'count'),
+			'limit' => (array_key_exists('limit', $data)) ? ((is_numeric($data['limit']) && $data['limit'] >= 0) ? intval($data['limit']) : NULL) : 0,
+			'min' => (array_key_exists('rating_min', $data)) ? ((is_numeric($data['rating_min']) && $data['rating_min'] >= 1 && $data['rating_min'] <= 5) ? intval($data['rating_min']) : 1) : NULL,
+			'max' => (array_key_exists('rating_max', $data)) ? ((is_numeric($data['rating_max']) && $data['rating_max'] >= 1 && $data['rating_max'] <= 5) ? intval($data['rating_max']) : 5) : NULL,
+			'view' => (array_key_exists('view', $data) && is_numeric($data['view']) && $data['view'] >= 1) ? intval($data['view']) : NULL
+		);
+        $title = (isset($data['title'])) ? apply_filters('widget_title', $data['title']) : NULL;
+		
+		if (isset($data['theme']) && is_string($data['theme']) && $data['theme'] != NULL)
 		{
-			extract($default_values, EXTR_SKIP);
+			$shortcode_arguments['theme'] = $data['theme'];
+		}
+		
+		if (isset($data['language']) && is_string($data['language']) && $data['language'] != NULL)
+		{
+			$shortcode_arguments['language'] = $data['language'];
+		}
+		
+		if (!isset($data['display_review_count']) || !$data['display_review_count'])
+		{
+			unset($shortcode_arguments['summary'][5]);
+		}
+		
+		if (!isset($data['display_rating_stars']) || !$data['display_rating_stars'])
+		{
+			unset($shortcode_arguments['summary'][4]);
+		}
+		
+		if (!isset($data['display_rating']) || !$data['display_rating'])
+		{
+			unset($shortcode_arguments['summary'][3]);
+		}
+		
+		if (!isset($data['display_vicinity']) || !$data['display_vicinity'])
+		{
+			unset($shortcode_arguments['summary'][2]);
+		}
+		
+		if (!isset($data['display_name']) || !$data['display_name'])
+		{
+			unset($shortcode_arguments['summary'][1]);
 		}
 
-        $title = apply_filters('widget_title', $title);
-        $multiplier = (isset($multiplier)) ? $multiplier : NULL;
-		$view_reviews_url = ($this->demo) ? 'https://search.google.com/local/reviews?placeid=ChIJq6pqZz2uEmsRaQAMbAl0RW0' :  'https://search.google.com/local/reviews?placeid=' . esc_attr($this->place_id);			
-		$write_review_url = ($this->demo) ? 'https://search.google.com/local/writereview?placeid=ChIJq6pqZz2uEmsRaQAMbAl0RW0' :  'https://search.google.com/local/writereview?placeid=' . esc_attr($this->place_id);			
-		
-		if ($this->data == NULL || !isset($this->data['reviews']) || isset($this->data) && !is_array($this->data['reviews']))
+		if (!isset($data['display_icon']) || !$data['display_icon'])
 		{
-			$html = '<p class="error">' . esc_html__('Error: No review data found', 'g-business-reviews-rating') . '</p>';
-			return $before_widget . (($title != NULL) ? $before_title . $title . $after_title : '') . $html . $after_widget;
+			unset($shortcode_arguments['summary'][0]);
 		}
-
-		$this->reviews_filter($instance);
 		
-		if (is_string($theme))
+		if (empty($shortcode_arguments['summary']))
 		{
-			if ($key = array_search($theme, $this->reviews_themes) && is_string($key))
+			$shortcode_arguments['summary'] = FALSE;
+		}
+		elseif (count($shortcode_arguments['summary']) == 6)
+		{
+			unset($shortcode_arguments['summary']);
+		}
+		
+		if (array_key_exists('display_reviews', $data) && !$data['display_reviews'])
+		{
+			$shortcode_arguments['limit'] = 0;
+			
+			if (isset($shortcode_arguments['view']))
 			{
-				$theme = $key;
-			}
-			else
-			{
-				$theme = preg_replace('/[^0-9a-z -]/', '-', strtolower($theme));
+				unset($shortcode_arguments['view']);
 			}
 			
-			if (preg_match('/^light(?:\s+([^\s].+))?$/i', $theme, $m))
+			if (isset($shortcode_arguments['min']))
 			{
-				$theme = (isset($m[1])) ? $m[1] : NULL;
+				unset($shortcode_arguments['min']);
 			}
-		}
-		else
-		{
-			$theme = $this->theme;
 			
-			if (preg_match('/^light(?:\s+([^\s].+))?$/i', $theme, $m))
+			if (isset($shortcode_arguments['max']))
 			{
-				$theme = (isset($m[1])) ? $m[1] : NULL;
+				unset($shortcode_arguments['max']);
 			}
 		}
 		
-		$html = '<div class="google-business-reviews-rating'
-		. (($stylesheet) ? (((is_string($theme) && strlen($theme) > 2) ? ' ' . esc_attr($theme) . ((!$display_reviews && !$display_view_reviews_button && !$display_write_review_button && preg_match('/\bbadge\b/i', $theme)) ? ' link' : '') : '') . (($class_fill) ? ' fill' : '')) : '-clear') . '"'
-		. ((!$display_reviews && !$display_view_reviews_button && !$display_write_review_button && preg_match('/\bbadge\b/i', $theme) && $view_reviews_url != NULL) ? ' data-href="' . esc_attr($view_reviews_url) . '"' : '')
-		. '>
-';
-
-		if ($display_name)
+		if (!is_numeric($shortcode_arguments['limit']) && $shortcode_arguments['limit'] == NULL || is_numeric($shortcode_arguments['limit']) && $shortcode_arguments['limit'] > 0)
 		{
-			$html .= '	<h3 class="business-name' . ((!$display_icon) ? ' no-icon' : '') . '">' . (($display_icon && $this->business_icon != NULL) ? '<span class="icon"><img src="' . esc_attr($this->business_icon) . '" alt="' . esc_attr($this->business_name . ' ' . __('Icon', 'g-business-reviews-rating')) . '"></span>' : '') . esc_html($this->business_name) . '</h3>
-';
-		}
-		elseif ($display_icon && $this->business_icon != NULL)
-		{
-			$html .= '	<h3 class="business-icon icon no-name"><img src="' . esc_attr($this->business_icon) . '" alt="' . esc_attr($this->business_name . ' ' . __('Icon', 'g-business-reviews-rating')) . '"></h3>
-';
-		}
-		
-		if ($display_rating)
-		{
-			$html .= '	<p class="rating">';
-				
-			if ($display_attribution && preg_match('/\btiny\b/', $theme))
+			if (is_numeric($shortcode_arguments['view']))
 			{
-				$html .= '<span class="attribution google-icon" title="' . esc_attr__('Powered by Google', 'g-business-reviews-rating') . '"></span> ';
-			}
-
-			if ($display_rating_stars)
-			{
-				$html .= '<span class="number">' . esc_html((function_exists('number_format_i18n')) ? number_format_i18n($this->rating, 1) : number_format($this->rating, 1)) . '</span> ';
-				
-				if (get_option($this->alias . '_stylesheet'))
+				if ($shortcode_arguments['limit'] <= 1)
 				{
-					$partial = (round($this->rating * 10, 0, PHP_ROUND_HALF_UP) - floor($this->rating) * 10) * 10;
-					$html .= '<span class="all-stars' . (($animate) ? ' animate' : '') . '">'
-					. str_repeat('<span class="star"></span>', ($partial > 0) ? floor($this->rating) : ceil($this->rating))
-					. (($partial > 0) ? '<span class="star split-' . $partial . '-' . (100 - $partial) . '"></span>' : '')
-					. str_repeat('<span class="star gray"></span>', ($partial > 0) ? (5 - ceil($this->rating)) : (5 - floor($this->rating)))
-					. '</span> ';
+					unset($shortcode_arguments['view']);
+					
+					if (isset($shortcode_arguments['loop']))
+					{
+						unset($shortcode_arguments['loop']);
+					}
+					
+					if (isset($shortcode_arguments['iterations']))
+					{
+						unset($shortcode_arguments['iterations']);
+					}
 				}
 				else
 				{
-					$html .=  '<span class="rating-stars" data-rating="'.esc_attr($this->rating).'" data-multiplier="'.(is_numeric($multiplier) ? esc_attr($multiplier) : '').'">'.str_repeat('★', round($this->rating)) . ((round($this->rating) < 5) ? '<span class="not">' . str_repeat('☆', (5 - round($this->rating, 0, PHP_ROUND_HALF_DOWN))) . '</span>' : '').'</span> ';
-				}
-			}
-			else
-			{
-				$html .= '<span class="number-text">' . esc_html__('Rating:', 'g-business-reviews-rating') . '</span> <span class="number">' . esc_html((function_exists('number_format_i18n')) ? number_format_i18n($this->rating, 1) : number_format($this->rating, 1)) . '</span> ';
-			}
-			
-			if ($display_review_count)
-			{
-				$html .= '<a href="' . esc_attr($view_reviews_url). '" target="_blank" rel="nofollow" class="count">' . esc_html((function_exists('number_format_i18n')) ? number_format_i18n($this->user_ratings_total, 0) : number_format($this->user_ratings_total, 0)) . ' ' . (($this->user_ratings_total == 1) ? 'review' : 'reviews') . '</a>';
-			}
-			
-			$html .= '</p>
-';
-		}
-		elseif ($display_review_count)
-		{
-			$html .= '	<p class="review-count"><a href="' . esc_attr($view_reviews_url). '" target="_blank" rel="nofollow" class="count">' . esc_html((function_exists('number_format_i18n')) ? number_format_i18n($this->user_ratings_total, 0) : number_format($this->user_ratings_total, 0)) . ' ' . (($this->user_ratings_total == 1) ? __('review', 'g-business-reviews-rating') : __('reviews', 'g-business-reviews-rating')) . '</a></p>
-';
-		}
-		
-		if ($display_reviews)
-		{
-			if (empty($this->reviews))
-			{
-				$html .= '	<p class="listing no-reviews">No reviews found.</p>
-';
-			}
-			elseif (empty($this->reviews_filtered))
-			{
-				$html .= '	<p class="listing no-reviews">No reviews found due to filtering restrictions.</p>
-';
-			}
-			else
-			{
-				$html .= '	<ul class="listing">
-';
-				foreach ($this->reviews_filtered as $i => $a)
-				{
-					$html .= '		<li class="' . esc_attr('rating-' . $a['rating']) . '">
-			<span class="author-avatar"><a href="' . esc_attr($a['author_url']) . '" target="_blank">' . (($a['profile_photo_url'] != NULL) ? '<img src="' . esc_attr($a['profile_photo_url']) . '" alt="' . esc_attr__('Avatar', 'g-business-reviews-rating') . '">' : '&mdash;') . '</a></span>
-			<span class="author-name"><a href="' . esc_attr($a['author_url']) . '" target="_blank">' . esc_html($a['author_name']) . '</a></span>
-			<span class="rating">' . str_repeat('★', $a['rating']) . (($a['rating'] < 5) ? '<span class="not">' . str_repeat('☆', (5 - $a['rating'])) . '</span>' : '') . '</span>
-			<span class="relative-time-description">' . esc_html($a['relative_time_description']) . '</span>
-';
-
-					if ($display_review_text)
+					if ($shortcode_arguments['view'] < 1)
 					{
-						$set_excerpt = (is_numeric($excerpt_length) && strlen(strip_tags($a['text'])) > 20 && $excerpt_length < round(strlen(strip_tags($a['text'])) * 1.1));
-						$html .= '			<div class="text' . (($set_excerpt) ? ' text-excerpt' : '') . '">';
-						
-						if ($set_excerpt)
-						{
-							$html .= preg_replace('/(\r\n|\r|\n)+/', '<br>' . PHP_EOL . '				', preg_replace('/^(.{' . $excerpt_length . '}[^\s]{0,20})(.*)$/is', '<span class="review-snippet">$1</span> <span class="review-more-placeholder">… ' . esc_html($more) . '</span><span class="review-full-text">$2</span>', esc_html(strip_tags($a['text']))));
-						}
-						else
-						{
-							$html .= preg_replace('/(\r\n|\r|\n)+/', '<br>' . PHP_EOL . '				', esc_html(strip_tags($a['text'])));
-						}
-						
-						$html .= '</div>
-';
+						$shortcode_arguments['view'] = 1;
 					}
 					
-					$html .= '		</li>
-';
+					if (is_numeric($shortcode_arguments['limit']) && $shortcode_arguments['view'] >= $shortcode_arguments['limit'])
+					{
+						$shortcode_arguments['view'] = $shortcode_arguments['limit'] - 1;
+					}
+					
+					if (isset($shortcode_arguments['loop']) || isset($shortcode_arguments['iterations']))
+					{
+						if (isset($shortcode_arguments['loop']) && isset($shortcode_arguments['iterations']) && (!$shortcode_arguments['loop'] || !is_numeric($shortcode_arguments['iterations']) || is_numeric($shortcode_arguments['iterations']) && ($shortcode_arguments['iterations'] < 0.3 || $shortcode_arguments['iterations'] > 60)))
+						{
+							unset($shortcode_arguments['loop']);
+							unset($shortcode_arguments['iterations']);
+						}
+						elseif (!isset($shortcode_arguments['loop']) || !$shortcode_arguments['loop'] && isset($shortcode_arguments['iterations']))
+						{
+							unset($shortcode_arguments['iterations']);
+						}
+					}
+				}
+			}
+			
+			if (array_key_exists('offset', $data) && is_numeric($data['offset']) && $data['offset'] > 0)
+			{
+				$shortcode_arguments['offset'] = intval($data['offset']);
+			}
+			
+			if (!isset($data['display_review_text']) || !$data['display_review_text'])
+			{
+				if (array_key_exists('display_avatar', $data) && !$data['display_avatar'])
+				{
+					$shortcode_arguments['review_item_order'] = array('author', 'rating', 'date');
+				}
+				else
+				{
+					$shortcode_arguments['review_item_order'] = array('avatar', 'author', 'rating', 'date');
+				}
+			}
+			elseif (array_key_exists('display_avatar', $data) && !$data['display_avatar'])
+			{
+				if (array_key_exists('display_author', $data) && !$data['display_author'])
+				{
+					$shortcode_arguments['review_item_order'] = array('rating', 'date', 'review');
+				}
+				else
+				{
+					$shortcode_arguments['review_item_order'] = array('author', 'rating', 'date', 'review');
+				}
+			}
+			elseif (array_key_exists('display_author', $data) && !$data['display_author'])
+			{
+				$shortcode_arguments['review_item_order'] = array('avatar', 'rating', 'date', 'review');
+			}
+
+			if (isset($data['review_text_min']) && is_numeric($data['review_text_min']) && intval($data['review_text_min']) >= 20)
+			{
+				$shortcode_arguments['review_text_min'] = intval($data['review_text_min']);
+			}
+			
+			if (isset($data['review_text_max']) && is_numeric($data['review_text_max']) && intval($data['review_text_max']) >= 20)
+			{
+				$shortcode_arguments['review_text_max'] = intval($data['review_text_max']);
+			}
+			
+			if (isset($data['sort']) && is_string($data['sort']) && $data['sort'] != NULL)
+			{
+				$shortcode_arguments['sort'] = $data['sort'];
+			}
+			
+			if (isset($data['excerpt_length']) && is_numeric($data['excerpt_length']) && $data['excerpt_length'] >= 20)
+			{
+				$shortcode_arguments['excerpt'] = $data['excerpt_length'];
+				
+				if (array_key_exists('more', $data) && (is_string($data['more']) || $data['more'] == NULL))
+				{
+					$shortcode_arguments['more'] = $data['more'];
+				}
+			}
+		}		
+
+		if (isset($data['display_view_reviews_button']) && $data['display_view_reviews_button'])
+		{
+			$shortcode_arguments['reviews_link'] = TRUE;
+		}
+		
+		if (isset($data['display_write_review_button']) && $data['display_write_review_button'])
+		{
+			$shortcode_arguments['write_review_link'] = TRUE;
+		}
+		
+		if (array_key_exists('display_attribution', $data) && !$data['display_attribution'])
+		{
+			$shortcode_arguments['attribution'] = FALSE;
+		}
+
+		if (isset($data['class_fill']) && $data['class_fill'])
+		{
+			$shortcode_arguments['class'][] = 'fill';
+		}
+
+		if (array_key_exists('animate', $data) && !$data['animate'])
+		{
+			$shortcode_arguments['animate'] = FALSE;
+		}
+		
+		if (array_key_exists('stylesheet', $data) && !$data['stylesheet'])
+		{
+			$shortcode_arguments['stylesheet'] = FALSE;
+		}
+		
+		foreach ($shortcode_arguments as $k => $v)
+		{
+			$shortcode_parameters .= ' ' . $k . '=';
+			
+			if (is_array($v))
+			{
+				if ($k == 'class')
+				{
+					$shortcode_parameters .= '"' . implode(' ', $v) . '"';
+					continue;
 				}
 				
-				$html .= '	</ul>
-';
+				$shortcode_parameters .= '"' . implode(', ', $v) . '"';
+				continue;
 			}
+
+			if (is_numeric($v))
+			{
+				$shortcode_parameters .= $v;
+				continue;
+			}
+
+			if (is_bool($v))
+			{
+				$shortcode_parameters .= (($v) ? 'true' : 'false');
+				continue;
+			}
+			
+			if ($v == NULL)
+			{
+				$shortcode_parameters .= '""';
+				continue;
+			}
+
+			$shortcode_parameters .= '"' . preg_replace('/^\s+|\s+$|["\[\]]/', '', $v) . '"';
 		}
 		
-		if ($display_view_reviews_button || $display_write_review_button)
-		{
-			$html .= '	<p class="buttons">';
-			
-			if ($display_view_reviews_button)
-			{
-				$html .= '<a href="' . esc_attr($view_reviews_url) . '" target="_blank" rel="nofollow" class="button widget-button view-reviews">' . esc_html__('View Reviews', 'g-business-reviews-rating') . '</a>';
-			}
-			
-			if ($display_view_reviews_button && $display_write_review_button)
-			{
-				$html .= ' ';
-			}
-			
-			if ($display_write_review_button)
-			{
-				$html .= '<a href="' . esc_attr($write_review_url) . '" target="_blank" rel="nofollow" class="button widget-button write-review">' . esc_html__('Write Review', 'g-business-reviews-rating') . '</a>';
-			}
-			
-			$html .= '</p>
-';
-		}
+        extract($args, EXTR_SKIP);
 		
-		if ($display_attribution && !preg_match('/\btiny\b/', $theme))
-		{
-			$html .= '	<p class="attribution"><span class="powered-by-google" title="' . esc_attr__('Powered by Google', 'g-business-reviews-rating') . '"></span></p>
-';
-		}
-		
-		$html .= '</div>
-';
-        echo $before_widget . (($title != NULL) ? $before_title . $title . $after_title : '') . $html . $after_widget;
+        echo $before_widget . ((is_string($title) && $title != NULL) ? $before_title . esc_html($title) . $after_title : '') . do_shortcode('[reviews_rating ' . trim($shortcode_parameters) . ']') . $after_widget;
     }
     
     public function form($instance)
@@ -862,35 +1062,40 @@ class google_business_reviews_rating_widget extends WP_Widget
 		
 		if (!$this->demo)
 		{
-			if ((!$this->api_key || $this->api_key == NULL) && (!$this->place_id || $this->place_id == NULL))
+			if ($this->editor)
 			{
-				$html = '        <p class="error"><a href="' . esc_attr($this->plugin_settings_url) . '">' . esc_html__('Please set your Google API Key and Place ID', 'g-business-reviews-rating') . '</a>.</p>
-        <p class="buttons"><a href="' . esc_attr($this->plugin_settings_url) . '" class="button button-secondary">' . esc_html(__('Settings', 'g-business-reviews-rating')) . '</a></p>
+				$html = '        <p class="error">' . esc_html__('This plugin is not fully set up. Please ask your administrator to complete the process.', 'g-business-reviews-rating') . '</p>
+';
+			}
+			elseif ((!$this->api_key || $this->api_key == NULL) && (!$this->place_id || $this->place_id == NULL))
+			{
+				$html = '        <p class="error"><a href="' . esc_attr($this->plugin_url) . '">' . esc_html__('Please set your Google API Key and Place ID', 'g-business-reviews-rating') . '</a>.</p>
+        <p class="buttons"><a href="' . esc_attr($this->plugin_url) . '" class="button button-secondary">' . esc_html(__('Settings', 'g-business-reviews-rating')) . '</a></p>
 ';
 			}
 			elseif (!$this->api_key || $this->api_key == NULL)
 			{
-				$html = '        <p class="error"><a href="' . esc_attr($this->plugin_settings_url) . '">' . esc_html__('Please set your Google API Key', 'g-business-reviews-rating') . '</a>.</p>
-        <p class="buttons"><a href="' . esc_attr($this->plugin_settings_url) . '" class="button button-secondary">' . esc_html__('Settings', 'g-business-reviews-rating') . '</a></p>
+				$html = '        <p class="error"><a href="' . esc_attr($this->plugin_url) . '">' . esc_html__('Please set your Google API Key', 'g-business-reviews-rating') . '</a>.</p>
+        <p class="buttons"><a href="' . esc_attr($this->plugin_url) . '" class="button button-secondary">' . esc_html__('Settings', 'g-business-reviews-rating') . '</a></p>
 ';
 			}
 			elseif (!$this->place_id || $this->place_id == NULL)
 			{
-				$html = '        <p class="error"><a href="' . esc_attr($this->plugin_settings_url) . '">' . esc_html__('Please set your Place ID', 'g-business-reviews-rating') . '</a>.</p>
-        <p class="buttons"><a href="' . esc_attr($this->plugin_settings_url) . '" class="button button-secondary">' . esc_html__('Settings', 'g-business-reviews-rating') . '</a></p>
+				$html = '        <p class="error"><a href="' . esc_attr($this->plugin_url) . '">' . esc_html__('Please set your Place ID', 'g-business-reviews-rating') . '</a>.</p>
+        <p class="buttons"><a href="' . esc_attr($this->plugin_url) . '" class="button button-secondary">' . esc_html__('Settings', 'g-business-reviews-rating') . '</a></p>
 ';
 			}
 			elseif ($this->result == NULL)
 			{
-				$html = '        <p class="error">'.esc_html__('No rating or review data found.', 'g-business-reviews-rating') . ' <a href="' . esc_attr($this->plugin_settings_url) . '">' . esc_html__('Please check your Rating and Reviews settings.', 'g-business-reviews-rating') . '</a>.</p>
-        <p class="buttons"><a href="' . esc_attr($this->plugin_settings_url) . '" class="button button-secondary">' . esc_html__('Settings', 'g-business-reviews-rating') . '</a></p>
+				$html = '        <p class="error">'.esc_html__('No rating or review data found.', 'g-business-reviews-rating') . ' <a href="' . esc_attr($this->plugin_url) . '">' . esc_html__('Please check your Reviews and Rating settings.', 'g-business-reviews-rating') . '</a>.</p>
+        <p class="buttons"><a href="' . esc_attr($this->plugin_url) . '" class="button button-secondary">' . esc_html__('Settings', 'g-business-reviews-rating') . '</a></p>
 ';
 			}
 		}
 		
 		if ($html != '')
 		{
-			echo $html;
+			echo wp_kses($html, array('p' => array('id' => array(), 'class' => array()), 'a' => array('href' => array(), 'target' => array(), 'class' => array()), 'strong' => array(), 'em' => array()));
 			return;
 		}
 
@@ -904,7 +1109,7 @@ class google_business_reviews_rating_widget extends WP_Widget
 		
 		if ($html != '')
 		{
-			echo $html;
+			echo wp_kses($html, array('p' => array('id' => array(), 'class' => array())));
 			return;
 		}
 

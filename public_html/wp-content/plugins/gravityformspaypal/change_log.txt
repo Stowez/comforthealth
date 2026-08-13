@@ -1,8 +1,16 @@
-### 3.2.2
+### 3.5 | 2021-04-28
+- Fixed an issue with the display of the add-on icon in the form settings on Gravity Forms 2.5.
+- Removed extraneous animation from the trial input on the feed settings page.
+
+
+### 3.4 | 2020-09-15
+- Added support for Gravity Forms 2.5
+- Updated new transactions to use /?callback=gravityformspaypal as the IPN URL. Existing transactions will continue to use /?page=gf_paypal_ipn.
+
+
+### 3.3 | 2020-04-22
+- Added translations for Hebrew, Hindi, Japanese, and Turkish.
 - Fixed an issue where donation feeds configured to use a specific product field as the payment amount could use the form total instead when there are multiple products in the order summary. Requires Gravity Forms 2.4.16.6 or greater.
-
-
-### 3.2.1
 - Fixed notices which can occur with PHP 7.4 when Gravity Forms is processing post fields and form submission notifications.
 
 

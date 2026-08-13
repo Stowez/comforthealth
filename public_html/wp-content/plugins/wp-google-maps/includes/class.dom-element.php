@@ -2,8 +2,16 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 require_once(plugin_dir_path(__FILE__) . 'class.selector-to-xpath.php');
 
+/**
+ * Direct replacement for the defauly class.dom-element.php
+ * 
+ * Due to the fact it is located in the php8 sub directory, we will only load it for PHP 8 users
+*/
 class DOMElement extends \DOMElement
 {
 	protected static $xpathConverter;
@@ -11,6 +19,20 @@ class DOMElement extends \DOMElement
 	public function __construct()
 	{
 		\DOMElement::__construct();
+	}
+	
+	public function __get($name)
+	{
+		switch($name)
+		{
+			case "html":
+				
+				return $this->ownerDocument->saveHTML( $this );
+			
+				break;
+		}
+		
+		return \DOMElement::__get($name);
 	}
 	
 	/**
@@ -21,8 +43,10 @@ class DOMElement extends \DOMElement
 	public function querySelector($query)
 	{
 		$results = $this->querySelectorAll($query);		
+		
 		if(empty($results))
 			return null;
+		
 		return $results[0];
 	}
 	
@@ -36,7 +60,7 @@ class DOMElement extends \DOMElement
 		
 		try{
 			$expr 		= DOMElement::selectorToXPath($query);
-		}catch(Exception $e) {
+		}catch(\Exception $e) {
 			echo "<p class='notice notice-warning'>Failed to convert CSS selector to XPath (" . $e->getMessage() . ")</p>";
 		}
 		
@@ -49,43 +73,7 @@ class DOMElement extends \DOMElement
 		if($sort)
 			usort($results, array('WPGMZA\DOMElement', 'sortByDOMPosition'));
 		
-		return $results;
-	}
-	
-	/** 
-	 * Prepends the subject to this element.
-	 * @param $subject element or array of elements
-	 * @return $this element
-	 */
-	public function prepend($subject)
-	{
-		if(is_array($subject))
-		{
-			$originalFirst = $this->firstChild;
-			
-			foreach($subject as $el)
-				$this->insertBefore($el, $originalFirst);
-		}
-		else
-			$this->insertBefore($subject, $this->firstChild);
-		
-		return $this;
-	}
-	
-	/**
-	 * Appends the subject to this element.
-	 */
-	public function append($subject)
-	{
-		if(is_array($subject))
-		{
-			foreach($subject as $el)
-				$this->appendChild($subject);
-		}
-		else
-			$this->appendChild($subject);
-		
-		return $this;
+		return new DOMQueryResults($results);
 	}
 	
 	/**
@@ -94,17 +82,44 @@ class DOMElement extends \DOMElement
 	 */
 	public function closest($selector)
 	{
-		if($this === $this->ownerDocument->documentElement)
-			throw new \Exception('Method not valid on document element');
-		
-		for($el = $this; $el->parentNode != null; $el = $el->parentNode)
-		{
-			$m = $el->parentNode->querySelectorAll($selector);
-			if(array_search($el, $m, true) !== false)
-				return $el;
+		$allMatches = $this->ownerDocument->querySelectorAll($selector);
+
+		if (is_array($allMatches)) {
+			$allMatches = $allMatches;
+		} else if ($allMatches instanceof \Traversable) {
+			$allMatches = iterator_to_array($allMatches, false);
+		} else {
+			return null; 
 		}
 		
+		for($el = $this; $el !== null; $el = $el->parentNode){
+			if(array_search($el, $allMatches, true) !== false){
+				return $el;
+			}
+
+			if($el === $this->ownerDocument->documentElement){
+				break;
+			}
+		}
+
+		// for($el = $this; $el->parentNode != null; $el = $el->parentNode)
+		// {
+		// 	$m = $el->parentNode->querySelectorAll($selector);
+		// 	if(array_search($el, $m, true) !== false)
+		// 		return $el;
+		// }
+		
 		return null;
+	}
+	
+	/**
+	 * Wraps this element in the element passed in, then replaces this nodes original position
+	 * @param DOMElement The element to wrap this element in
+	 */
+	public function wrap($wrapper)
+	{
+		$this->parentNode->replaceChild($wrapper, $this);
+		$wrapper->appendChild($this);
 	}
 	
 	/**
@@ -212,10 +227,10 @@ class DOMElement extends \DOMElement
 		
 		if($subject instanceof \DOMDocument)
 		{
-			if(!$subject->documentElement)
+			if(!$subject->getDocumentElementSafe())
 				throw new \Exception('Document is empty');
 			
-			$node = $this->ownerDocument->importNode($subject->documentElement, true);
+			$node = $this->ownerDocument->importNode($subject->getDocumentElementSafe(), true);
 
 		}
 		else if($subject instanceof \DOMNode)
@@ -234,25 +249,26 @@ class DOMElement extends \DOMElement
 			else
 				$temp->load($subject);
 			
-			$node = $this->ownerDocument->importNode($temp->documentElement, true);
+			$node = $this->ownerDocument->importNode($temp->getDocumentElementSafe(), true);
 		}
 		else if(is_string($subject))
 		{
 			if(empty($subject))
 				return;
 			
-			if($subject != strip_tags($subject))
+			if($subject != strip_tags($subject) || preg_match('/&.+;/', $subject))
 			{
 				// Subject is a HTML string
 				$html = DOMDocument::convertUTF8ToHTMLEntities($subject);
 				
 				$temp = new DOMDocument('1.0', 'UTF-8');
 				$str = "<div id='domdocument-import-payload___'>" . $html . "</div>";
-				
-				if(!empty($wpgmza->settings->developer_mode))
+
+				if($wpgmza->isInDeveloperMode()){
 					$temp->loadHTML($str);
-				else
+				} else {
 					@$temp->loadHTML($str);
+				}
 				
 				$body = $temp->querySelector('#domdocument-import-payload___');
 				for($child = $body->firstChild; $child != null; $child = $child->nextSibling)
@@ -276,14 +292,21 @@ class DOMElement extends \DOMElement
 		
 		if($body = $node->querySelector("body"))
 		{
-			// TODO: I don't think a query selector is necessary here. Iterating over the bodies children should be more optimal.
-			foreach($node->querySelectorAll("body>*") as $child)
+			// TODO: I don't think a query selector is necessary here. Iterating over the bodies children should be more optimal
+			$results = $node->querySelectorAll("body>*");
+			
+			foreach($results as $child)
 				$this->appendChild($child);
+			
+			return $results;
 		}
 		else
+		{
 			$this->appendChild($node);
+			return $node;
+		}
 		
-		return $this;
+		return null;
 	}
 	
 	/**
@@ -502,6 +525,47 @@ class DOMElement extends \DOMElement
 		return $this;
 	}
 	
+	public function serializeFormData()
+	{
+		$data = array();
+		
+		foreach($this->querySelectorAll('input, select, textarea') as $input)
+		{
+			$name = $input->getAttribute('name');
+			
+			if(!$name)
+				continue;
+			
+			if(preg_match('/nonce/i', $name))
+				continue; // NB: Do not serialize nonce values
+			
+			switch($input->getAttribute('type'))
+			{
+				case 'checkbox':
+				
+					if($input->getValue())
+						$data[$name] = true;
+					else
+						$data[$name] = false;
+					
+					break;
+					
+				case 'radio':
+				
+					if($input->getAttribute('checked'))
+						$data[$name] = $input->getAttribute('value');
+				
+					break;
+				
+				default:
+					$data[$name] = $input->getValue();
+					break;
+			}
+		}
+		
+		return $data;
+	}
+	
 	/**
 	 * Gets the value of this element
 	 * @return mixed A string if the element a text input, textarea or plain node, a boolean if the element is a checkbox or radio, or the value of the selected option if this element is a select
@@ -547,6 +611,14 @@ class DOMElement extends \DOMElement
 	 */
 	public function setValue($value)
 	{
+		/*if($this->getAttribute("name") == "wpgmza_gdpr_require_consent_before_load")
+		{
+			
+			echo "<pre>";
+			debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+			exit;
+		}*/
+		
 		switch(strtolower($this->nodeName))
 		{
 			case 'textarea':
@@ -644,21 +716,59 @@ class DOMElement extends \DOMElement
 	 */
 	public function clear()
 	{
+
 		while($this->childNodes->length)
 			$this->removeChild($this->firstChild);
 		return $this;
+	}
+
+	/** 
+	 * Prepends the subject to this element.
+	 * @param $subject element or array of elements
+	 * @return $this element
+	 */
+	#[\ReturnTypeWillChange]
+	public function prepend(...$subject) : void
+	{
+		if(is_array($subject))
+		{
+			$originalFirst = $this->firstChild;
+
+			foreach($subject as $el)
+				$this->insertBefore($el, $originalFirst);
+		}
+		else
+			$this->insertBefore($subject, $this->firstChild);
+
+		// return $this;
+	}
+
+	/**
+	 * Appends the subject to this element.
+	 * @param $subject element or array of elements
+	 * 
+	 */
+	#[\ReturnTypeWillChange]
+	public function append(...$subject) : void
+	{
+		if(is_array($subject))
+		{
+			foreach($subject as $el)
+				$this->appendChild($el);
+		}
+		else
+			$this->appendChild($subject);
+
+		// return $this;
 	}
 	 
 	/**
 	 * Removes this element from it's parent
 	 * @return \Smart\Element This element
 	 */
-	public function remove()
+	public function remove() : void
 	{
 		if($this->parentNode)
 			$this->parentNode->removeChild($this);
-		return $this;
 	}
 }
-
-?>

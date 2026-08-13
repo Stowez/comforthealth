@@ -1,143 +1,705 @@
-﻿=== Reviews and Rating – Google Business ===
+﻿=== Reviews and Rating – Google Reviews ===
 
-Plugin Name: Reviews and Rating – Google Business
-Plugin URI: https://designextreme.com/wordpress/
+Plugin Name: Reviews and Rating – Google Reviews
+Plugin URI: https://designextreme.com/wordpress/gmbrr/
 Contributors: designextreme
 Donate link: https://paypal.me/designextreme
-Tags: review, reviews, rating, google reviews, google business, google rating, google places, structured data
+Tags: google reviews, google rating, google my business, gmb reviews, structured data
 Requires at least: 4.6
-Tested up to: 5.4
-Stable tag: trunk
+Tested up to: 6.7.1
+Stable tag: 5.10
 Requires PHP: 5.2.4
 License: GPLv3 or later
 License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
-Shortcode and widget for Google reviews and rating. Give customers a chance to leave their own rating/review; includes Structured Data for SEO.
+Completely restriction-free Google reviews and rating as Shortcode/Widget. Extensive display options; delicious themes; includes Structured Data.
 
 == Description ==
 
-Do you have a Google Business listing and would like to show your current customer reviews and rating within your website? 
+Promote your Google reviews and rating from your *Google My Business* listing – with current customer reviews and the overall rating loading from within your website
 
-This plugin will collect this data using your unique Google Place ID and display a well-formatted list or column/blocks of reviews, and some associated links to reviews and Google map listing, plus point customers to post their own review and rating on Google.
+This plugin will collect your location’s data using Google’s Place ID; transforming this information into a well-formatted list or blocks of reviews. You’ll be able to add links to the Google reviews, your Google Maps listing, plus direct your customers to post their reviews and ratings with Google. Don’t worry: there are no restrictions to the reviews collection and plenty of options to display it perfectly on your website.
 
-= People love this plugin: =
+= Easy and secure integration direct from Google =
+
+This Google reviews plugin is the perfect tool for businesses looking to showcase their customer reviews and ratings fully-loaded right on their website.
+
+One of the many standout features of the plugin is its easy setup and integration with reviews posted to Google My Business using Google’s Places API. You will be able to quickly and easily display your business’s ratings and reviews on your website. A fully automated process keeps the overall rating accurate and over time maintains and builds the catalog of customer reviews.
+
+= Highly customizable with an extensive selection of designs =
+
+Whether you prefer lists, carousels, columns, or tiles… it’s all covered. A great feature of the plugin is the customizable designs – currently 150 variations with light and dark versions and 14 color schemes.
+
+All aspects of the summary can be selected as with each review item. There’s even the author’s name and date formatting for good measure!
+
+You can choose from an extensive range of templates to display their reviews and ratings in a way that fits your website design. The styling has a light touch so you can also customize the templates to match your brand style and preferences.
+
+= Unconstrained filtering of reviews =
+
+The plugin also allows businesses to sort and filter reviews by all elements of the review including its star rating. Star rating filtering means a business can choose to display only its most positive reviews or, for a transparent approach, all reviews, regardless of their rating. Apply your desire for similar-length reviews, include or exclude reviews by their word content, cached shuffled reviews, and more – everything you’ll need, it’s all there.
+
+= A fully responsive design =
+
+The plugin is designed to be fully responsive, which means that it will look great on all devices, including desktop computers, laptops, tablets, and smartphones. This is an important feature for businesses that want to ensure that their customer reviews and ratings are easily accessible to all visitors and deliver on the highest SEO demands.
+
+= Regularly updated and feedback-driven development =
+
+This plugin is regularly updated to ensure that it is always up-to-date and working with the latest version of WordPress and edge PHP releases. This means that businesses can rest assured that their customer reviews and ratings will be displayed correctly and accurately, without any technical issues.
+
+We listen to user feedback and any good suggestions will be considered and implemented in new releases. As documented in our plugin reviews, support is second to none, surpassing what you’d expect from paid support with premium plugins.
+
+= Free, powerful and reliable =
+
+So, get this Google reviews plugin for a powerful and versatile way to showcase your customer reviews and ratings on your website. With its easy integration with the Places API, numerous customizable designs, extensive sorting and filtering, excellent shortcode support, responsive design, free to use, Structured Data/Schema and fully maintained. This plugin is the perfect tool for any business looking to build trust and credibility with its customers.
+
+== People love this plugin: ==
+
+>   **[This. Plugin. Is. OUTSTANDING](https://wordpress.org/support/topic/this-plugin-is-outstanding-3/)**
+This is easily the best plugin out there for showing Google reviews on a WordPress site. I’ve tried everything, and nothing out there provides the flexibility that this one’s shortcode system uses. All in an easy-to-use package. Very impressed!
+[★★★★★](https://wordpress.org/support/topic/this-plugin-is-outstanding-3/) - [npierno](https://wordpress.org/support/users/npierno/), Feb 2021
 
 >   **[This Is The Best Google Business Reviews Plugin Out There](https://wordpress.org/support/topic/this-is-the-best-google-business-reviews-plugin-out-there/)**
-I’ve used all the Google Business Reviews plugins out there and this is the best. … Love the presentation of the reviews. … The plugin author is VERY responsive. Answers all questions and quickly. 
+I’ve used all the Google Business Reviews plugins out there and this is the best. … Love the presentation of the reviews. … The plugin author is VERY responsive. Answers all questions and quickly.
 [★★★★★](https:/wordpress.org/support/topic/this-is-the-best-google-business-reviews-plugin-out-there/) - [minks32578](https://wordpress.org/support/users/minks32578/), Jan 2020
 
->   **[Best Google review plugin and superb support](https://wordpress.org/support/topic/best-google-review-plugin-and-superb-support/)**
-A stunning plugin. … Top class support. 
-[★★★★★](https://wordpress.org/support/topic/best-google-review-plugin-and-superb-support/) - [KevinLycett](https://wordpress.org/support/users/kevinlycett/), Feb 2020
-
 >   **[Excellent Plugin](https://wordpress.org/support/topic/excellent-plugin-5241/)**
-Very impressed with the functionality of this plugin. Manual HTML import worked smooth and took less than a minute. … This is an amazing plugin. Looking forward to seeing what else this rockstar dev releases. 
+Very impressed with the functionality of this plugin. Manual HTML import worked smooth and took less than a minute. … This is an amazing plugin. Looking forward to seeing what else this rockstar dev releases.
 [★★★★★](https://wordpress.org/support/topic/excellent-plugin-5241/) - [sterlingokura](https://wordpress.org/support/users/sterlingokura/), Nov 2019
 
-= Features: =
+== Features: ==
 
 *   **Shortcode and Widget** for customer reviews on Google
-*   *Very* high level of customization with more [added on request](https://designextreme.com/wordpress/)
-*   Insert a list of customers’ reviews with ratings range, review length range, offset, limit, sorting, language and individual review(s) selection
-*   Fully responsive design with light styling to allow for your customizations; show/hide any element using shortcode parameters
-*   Customize appearance with columns, switch of review text, hide or overwrite avatars, date formatting, name formatting, and much more
+*   *Very* high level of customization with more [added on request](https://designextreme.com/wordpress/gmbrr/)
+*   Insert a list of customers’ reviews with rating range, review length range, offset, [unrestricted] limit, sorting, language and individual review(s) selection
+*   [Fully responsive design](https://demo.designextreme.com/reviews-rating-google-business/) with light styling to allow for your customizations; show/hide any element using shortcode parameters
+*   Customize appearance with columns, customize order within review items, hide or overwrite avatars, date formatting, name formatting, and much more
 *   Designed with SVG vector graphics for a crisp appearance across all devices
-*   40 designs/themes including:
+*   250 designs/themes including:
 	*   support for light/dark backgrounds,
 	*   fonts similar to those used by Google,
-	*   a badge theme with standard and small versions,
-	*   responsive 2, 3 and 4 columns layouts for wider spaces,
-	*   a center aligned version,
+	*   [badge themes](https://demo.designextreme.com/reviews-rating-google-business/#badge) with standard and small versions,
+	*   [bubble themes](https://demo.designextreme.com/reviews-rating-google-business/#bubble), outlined and filled,
+	*   [tile themes](https://demo.designextreme.com/reviews-rating-google-business/#tile),
+	*   [responsive 2, 3, 4, 5 or 6 columns](https://demo.designextreme.com/reviews-rating-google-business/#columns) layouts for wider spaces,
+	*   a center-aligned version,
 	*   a narrow version for smaller spaces,
-	*   plus an option to remove styling entirely
+	*   14 additional [color schemes](https://demo.designextreme.com/reviews-rating-google-business/#columns),
+	*   plus options to load compressed CSS or remove it entirely
+*   [**Carousel/Slider** capabilities](https://demo.designextreme.com/reviews-rating-google-business/#carousel)
+	*	Specify slides with one or more reviews
+	*	Set the number of loops or iterations
+	*	Swipe gestures and clever keyboard navigation
+	*	Transitions will pause on mouse hover
+	*	Customizable navigation bullets
+	*	Works with all themes containing a list of reviews
 *   Additional shortcodes for:
-	*   Link to reviews and current rating on Google, with optional Google icon
-	*   Link for customers to leave their rating and write a review on Google, with optional Google icon
-	*   Link to the business place/location with Google Maps, with optional Google icon
+	*   Link to [reviews](https://demo.designextreme.com/reviews-rating-google-business/#links) and current rating on Google, with an optional Google icon
+	*   Link for customers to [leave their rating](https://demo.designextreme.com/reviews-rating-google-business/#links) and write a review on Google, with an optional Google icon
+	*   Link to the [business place/location](https://demo.designextreme.com/reviews-rating-google-business/#links) with Google Maps, with an optional Google icon
 	*   Display the current rating as a number
 	*   Display the total number of reviews
+*   Right To Left (RTL) language support
 *   Live preview in Dashboard→Settings
 *   Select your choice icon to replace Google’s generic icons
-*   **Structured Data** ([Schema.org](http://schema.org)) support to present clear business and review data to search engines to assist with SEO
+*   **Structured Data** ([Schema.org](http://schema.org)) support to present clear business information and review data to search engines which assists with SEO
 *   **Demo mode** to help create your website before it goes live; without requiring Google API credentials
 *   Manage all retrieved reviews and selectively hide reviews
 *   See the latest formatted JSON data from Google’s API
 *   Retrieves reviews in the background, collecting more through Google’s API over time with a snapshot of valid data for stability
 *   Clear cache, reset retrieved reviews and overall reset to clear all plugin data
-*   **Advanced** capability to import *all* review data from Google’s review popup HTML or consolidated reviews HTML (inspecting the live HTML)
+*   **Advanced** capability to import *all* review data from Google’s review popup HTML, Google My Business reviews or consolidated reviews HTML (inspecting the live HTML)
 *   A comprehensive and *free* plugin with no upgrades for additional functionality
 
-= Requirement: =
+== Demonstration: ==
+
+We have a comprehensive showcase of the shortcode’s design and functionality on our [Demonstration Website](https://demo.designextreme.com/reviews-rating-google-business/).
+
+*   [Basic Shortcode](https://demo.designextreme.com/reviews-rating-google-business/)
+*   [Standard appearance in French](https://demo.designextreme.com/reviews-rating-google-business/#french)
+*   [Bubbles, outlined](https://demo.designextreme.com/reviews-rating-google-business/#bubble)
+*   [Bubbles, centred and filled](https://demo.designextreme.com/reviews-rating-google-business/#bubble-center-fill)
+*   [Tile effect](https://demo.designextreme.com/reviews-rating-google-business/#tile)
+*   [Columns and colors](https://demo.designextreme.com/reviews-rating-google-business/#columns)
+*   [Review item order and design](https://demo.designextreme.com/reviews-rating-google-business/#review-item-order)
+*   [Carousel/Slider](https://demo.designextreme.com/reviews-rating-google-business/#carousel)
+*   [Selection of badges](https://demo.designextreme.com/reviews-rating-google-business/#badge)
+*   [Buttons and links](https://demo.designextreme.com/reviews-rating-google-business/#links)
+
+== Requirements: ==
 
 *   A free [Google API Key](https://developers.google.com/maps/documentation/javascript/get-api-key) and a [Place ID](https://developers.google.com/places/place-id). Specific locations are supported; coverage areas are no longer offering data through the API.
+*   A [Google Billing Account](https://console.cloud.google.com/billing) to receive your *substantial and free* API Request allocation.
 
-= Recommendations: =
+== Recommendations: ==
 
 *   Please [set your business in Google](https://business.google.com) and find your Business’ [Place ID](https://developers.google.com/places/place-id) before using this plugin.
-*   Create a [Google Billing Account](https://console.cloud.google.com/billing) to receive your *substantial and free* API Request allocation.
-*   For peace of mind, please set [Google Places API Quotas](https://console.cloud.google.com/google/maps-apis/apis/places-backend.googleapis.com/quotas) to keep requests below the billable threshold. Recommended value for requests is 100 per day.
+*   For peace of mind, please set [Google Places API Quotas](https://console.cloud.google.com/google/maps-apis/apis/places-backend.googleapis.com/quotas) to keep requests below the billable threshold. The recommended value for requests is 100 per day.
 
-*This is my first public plugin, so [all comments](https://designextreme.com/wordpress/) are very welcome. I would also like to see your usage so I can introduce new themes.*
+*This is my first public plugin, so [all comments](https://designextreme.com/wordpress/gmbrr/) are very welcome. I would also like to see your usage so I can introduce new themes. There is a sister plugin: [We’re Open!](https://wordpress.org/plugins/opening-hours/) which retrieves current opening hours from Google My Business.*
 
 == Installation ==
 
 1. Upload the plugin files to the `/wp-content/plugins/g-business-reviews-rating` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the ‘Plugins’ screen in WordPress
-3. Use the **Settings**→**Reviews and Rating – Google Business** screen to configure the plugin with your Google API Key and the business’ Place ID
-4. Once the Google Credentials are set, available shortcodes will appear to place in any page, post or use the widget
+3. Use the **Settings**→**Reviews and Rating – Google Reviews** screen to configure the plugin with
+	a. your [Google API Key](https://designextreme.com/wordpress/gmbrr/#api-key) and
+	b. the business’ [Place ID](https://developers.google.com/places/place-id).
+4. Once the Google credentials are all set, shortcodes will be available to place in any page, post or use the widget
 
 
 == Frequently Asked Questions ==
 
 = How do I get a Google API Key? =
 
-All the details for collecting your Google API Key can be found at: [Google API Key Guidelines](https://developers.google.com/maps/documentation/javascript/get-api-key).
+All the details for collecting your Google API Key can be found at [our visual guide to creating a Google API Key](https://designextreme.com/wordpress/gmbrr/#api-key).
 
-Once your *Project* is set, you will need a new *API Key* with access to the **Places API**. As a restriction, set your host’s **IP Address** (not your website’s URL). Details of this value are listed in the Settings→Reviews and Rating page.
+Once your *Project* is set, you will need a new *API Key* with access to the **Places API**. As a restriction, set your host’s **IP Address** (not your website’s URL). Details of this value are listed on the Settings→Reviews and Rating page.
 
 The Google API is required for this plugin to load the data from the Google API.
 
 = How do I find my Place ID? =
 
-You can location your unique *Place ID* using Google’s: [Place ID Finder](https://developers.google.com/places/place-id)
+You can locate your unique *Place ID* using Google’s: [Place ID Finder](https://developers.google.com/places/place-id)
 
 = I have more than 5 reviews, why can I only see 5 in this plugin? =
 
-The Google API only offers a maximum of 5 relevant reviews at a time. Fortunately, this plugin will collect more reviews over time giving you more options to display your own selection of reviews from a larger pool. If you feel comfortable with the *HTML Inspector* in your browser, you can import all the reviews showing in the Google reviews popup.
+The Google API only offers a maximum of 5 relevant or recent reviews at a time. Fortunately, this plugin will collect more reviews over time giving you more options to display your selection of reviews from a larger pool. If you feel comfortable with the *HTML Inspector* in your browser, you can import all the reviews showing in the Google reviews popup.
 
 = Why can’t I see any reviews on the website? =
 
-Your first place to check is the *Retrieved Data* tab in Dashboard→Settings. If there is an error here, follow the advice offered by the Google API. If you can see some reviews listed, check for restrictions in your settings or shortcode that may limit the results. You can use the parameter: *errors=1* to report back potential issues in the front-end.
+Your first place to check is the *Retrieved Data* section in Dashboard→Settings. If there is an error here, follow the advice offered by the Google API. If you can see some reviews listed, check for restrictions in your settings or Shortcode that may limit the results. You can use the parameter: *errors=1* to report back potential issues in the front-end.
 
 = I retrieved some reviews, but now an error message is asking for an “active billing account”. What can I do to see my reviews again? =
 
-To use this plugin over time, you’ll need multiple requests to the Place API. Accounts without billing details have a tiny initial allocation. So, please [enable billing](https://console.cloud.google.com/project/_/billing/enable) to receive your substantial and free API request allocation.
+To use this plugin over time, you’ll need multiple requests to the Place API. Accounts without billing details have a tiny initial allocation. So, please [enable billing](https://console.cloud.google.com/projectselector/billing/enable) to receive your substantial and free API request allocation.
+
+= Why does this require a Google Billing Account if it’s free? =
+
+The link to a [Google Billing Account](https://console.cloud.google.com/projectselector/billing/enable) is Google’s way of preventing overuse of its APIs – prolific users will be billed according. Fortunately, this plugin will use a tiny fraction of your inclusive free allowance; so it is free to use.
+
+= Can I limit my API requests to keep these within my free allowance? =
+
+This plugin will only use a fraction of your free allowance. However, for peace of mind, you can limit the request to ensure it stays within your free allowance. Just go to [Google Maps Platform: Quotas](https://console.cloud.google.com/google/maps-apis/quotas); select Places API from the dropdown at the top; in the first Requests section, set the “Requests per day” to 100 and click Save.
+
+= Getting my own Google API is annoying; can’t I just load my reviews from somewhere else? =
+
+This is possible; however it would involve sharing your data with a third-party provider. We believe that it is much better to source your reviews direct from Google. Additionally, relying on anyone other than Google will result in slower updates and/or fewer reviews with the possibility of being cut-off their service goes down or if they decide to limit their service to reduce costs.
+
+= When setting up the Google API Credentials, I cannot see Places API listed. Where is it? =
+
+Some people don’t appear to have the Places API enabled in their account. Go to your [Places API page](https://console.cloud.google.com/apis/library/places-backend.googleapis.com?q=place) and click to Enable this API.
+
+= How many locations can I add to this plugin? =
+
+You can add as many as you wish. However, only the current location will be updated at the frequency you’ve set within the Settings. There is a Shortcode parameter: *place_id* will load reviews and other data from a previously set location. A new premium plugin is in development that will offer comprehensive management of multiple locations. So if this is of interest, please [get in touch](https://designextreme.com/wordpress/gmbrr/) and we’ll notify you when this is available.
+
+= May I allow an editor to manage the reviews? =
+
+Yes, the role: _Editor_ is permitted to manage reviews by default. If you wish to switch off access to the review management (also Shortcodes and About sections), this switch is available in the Advanced section.
+
+= Can I place Structured Data on a different page; not the front page? =
+
+Yes. However, you will need to manually edit the options table and look for the name _google_business_reviews_rating_structured_data_. Set the value to correspond to the Page ID you’d like to use.
+
+= I can see my reviews in Google, but nothing is appearing in the plugin. The Google API and Place ID are valid. What is happening? =
+
+Google does not send data for all places; only those currently found using the [Place ID Finder](https://developers.google.com/places/place-id). Some people who have service or coverage areas that aren’t a specific area may receive an error message: Not Found when attempting to retrieve data. This may occur after some time has passed. Unfortunately, there is nothing to remedy this issue for the time being other than to ensure your business uses a specific location as its Place ID.
+
+= My reviews are no longer updating. What can I do to retrieve new reviews?
+
+This could occur if your billing details become outdated or something else has changed that has disrupted the flow of new data. Please check your billing details are current in your [Google Billing Account](https://console.cloud.google.com/projectselector/billing/enable).
+
+If you’re seeing either a vague error message (or no error message at all), please try enabling: Clean Retrieved Data in the General section and then Clear Cache in the Advanced section.
 
 = I don’t have any reviews yet, how can I develop my new website without any data to preview? =
 
 There’s a demo mode that will populate some reviews for you and allow for testing prior to going live.
 
-= When setting up the Google API Credentials, I cannot see Places API listed. Where is it? =
+= I want to load a compressed version of the script and/or CSS, is this possible? =
 
-Some people don’t appear to have the Places API enabled in their account. Go to your [Places API page](https://console.cloud.google.com/apis/library/places-backend.googleapis.com?q=place) and click to Enable this API. 
+You can select to load the standard or minified versions of the JavaScript and style sheet files or opt to avoid loading either/both of these.
 
-= I can see my reviews in Google, but nothing is appearing in the plugin. The Google API and Place ID are valid. What is happening? =
+= Is this plugin GDPR compliant? =
 
-Google does not send data for all places; only those currently found using the [Place ID Finder](https://developers.google.com/places/place-id). Some people who have service or coverage areas that aren’t a specific area may receive an error message: Not Found when attempting to retrieve data. This may occur after a period of time has passed. Unfortunately, there is nothing to remedy this issue for the time-being, other than to ensure your business uses a specific location as its Place ID.
+Yes. The customer ratings and reviews are collected directly by your web server from Google Cloud using the Places API. No customer data is shared at any point in this process. Similarly, the HTML Import process processes the same publicly available content from Google’s review listing.
+
+If you are concerned about loading either the business icon or avatar images through Google’s CDN, you can choose to use [locally hosted images](https://demo.designextreme.com/reviews-rating-google-business/#columns) in their place, save all CDN images locally or hide these altogether.
+
+= Where can I find some examples of the Shortcodes? =
+
+There’s a comprehensive list in the Shortcodes section in Dashboard→Settings. To view a showcase of many of these Shortcodes with various parameters and some suggestions for CSS, please have a look at our [Demonstration Website](https://demo.designextreme.com/reviews-rating-google-business/).
 
 == Screenshots ==
 
-1. Example of the reviews listings with Light/Dark themes, multiple columns and various Badge themes
-2. Dashboard view Google API, Place ID and general review display settings – Demo mode set
-3. Shortcodes with some examples of the parameters
-4. Details of the many shortcode parameters available to customise the display
-5. Dashboard view of all retrieved reviews, with more added over time from Google
-6. Dashboard view of current retrieved data using the Google API
-7. Widget with extensive customization in the Dashboard
-8. Dashboard view of advanced HTML import
-9. Dashboard view of advanced import with 2 new reviews
+1. Examples of the reviews listings with Light/Dark themes, badges, multiple columns and bubble themes
+2. Examples of shortcodes and their results; all visible on the Demonstration Website
+3. Dashboard view with general review display settings and a preview of a bubble theme
+4. Shortcodes with some examples of the parameters
+5. Details of the many shortcode parameters available to customize the display
+6. Dashboard view of all retrieved reviews, with more added over time from Google
+7. Dashboard view of current retrieved data using the Google API
+8. Widget with extensive customization in the Dashboard
+9. Dashboard view of advanced HTML import, custom styles, script and style preferences, cache clearing and various resets
+10. Dashboard view of advanced import with 9 new reviews
 
 == Changelog ==
+
+= 5.10 =
+
+* Added missing values for name_format parameter
+* Improved HTML Import to find more author URLs and improve identification of ratings
+* Improved HTML Import to ignore service scores within reviews 
+
+= 5.9 =
+
+* Fixed CSS Shortcode parameter value for star and star_gray
+
+= 5.8 =
+
+* Improved support for relative times (Thanks to @ziegel)
+* Fixed parameter for stars to allow color strings (Thanks to @ziegel)
+
+= 5.7 =
+
+* Added Croatian and Serbian language support for relative times (Thanks to Chaky)
+* Fixed _load_textdomain_just_in_time warning
+* Tested with WordPress 6.7.1
+
+= 5.6 =
+
+* Added immediate start parameter for stars animation
+* Extended HTML Import to accept Google My Business version
+* Tested with WordPress 6.6.2
+
+= 5.5 =
+
+* Added support for inline SVG stars
+* Added Hungarian and Japanese language support for relative times (Thanks to Örs and Kevin)
+* Improved rating star animation: initiating when in view
+* Restricted effect of avatar dimension variables in CSS
+* Tested with WordPress 6.6.1
+
+= 5.4 =
+
+* Fixed color replacement for 90% star (Thanks to @kennypurnomo)
+* Added sticky table headers throughout plugin’s settings
+
+= 5.3 =
+
+* Added file selection support for WEBP images
+* Removed support for uploading unsanitized SVG (Thanks to Tiffany Tyson, Wordfence)
+
+= 5.2 =
+
+* Added an option to store avatars locally
+
+= 5.1 =
+
+* Added individual place deletion
+* Fixed review counter animation in Reviews section
+* Adjusted base64 strings in CSS
+
+= 5.0 =
+
+* Altered the name of the plugin
+* Refreshed design of plugin’s settings
+* Improved navigation within sections
+* Improved check for maybe_serialize() issue
+* Added keyboard navigation between sections
+* Added a more informative place listing for more than one
+* Added instant review list filtering in the Dashboard
+* Added instant filtering by rating in the Dashboard
+* Added a hidden option to include Structured Data on all pages
+* Added administrator notifications
+* Added reset for additional places
+* Added reset for administrator notifications
+* Added editor permission toggle to Advanced section
+* Added work-around for PHP 8.3.2 bug concerning instable arrays to Widget class
+* Fixed warning returned by sorting null values
+* Fixed fwrite warning from a null value
+* Added support for WordPress Playground
+* Tested with WordPress 6.5
+
+= 4.30 =
+
+* Extended HTML Import to support several versions of Google Maps (Thanks to @nielsgww)
+
+= 4.29 =
+
+* Added a warning for HTML Import using HTML from Google search results
+* Extended HTML Import to support Google Maps version
+
+= 4.28 =
+
+* Added work-around for PHP 8.3.2 bug concerning instable arrays (Thanks to @navmansolutionsgmailcom)
+
+= 4.27 =
+
+* Added new parameters for Structured Data Shortcode: html_tag and outer_html (Thanks to @louisgcom)
+* Updated diagrams for HTML Import
+
+= 4.26 =
+
+* Improved input sanitization
+* Improved clarity and readability of text strings
+* Fixed the style sheet check in the theme selection
+
+= 4.25 =
+
+* Updated design of Shortcode examples
+* Fixed HTML validity in Dashboard→Settings
+* Tested with WordPress 6.4
+
+= 4.24 =
+
+* Fixed warning caused by missing avatars in the meta box
+
+= 4.23 =
+
+* Fixed carousel activity at short intervals
+
+= 4.22 =
+
+* Improved HTML Import
+
+= 4.21 =
+
+* Added option to disable editor capabilities (Thanks to @lion73)
+* Improved HTML Import diagram layout
+* Tested with WordPress 6.3
+
+= 4.20 =
+
+* Improved tab navigation for editors
+* Corrected reviews link in widget for editors
+* Fixed review text issue in HTML Import (Thanks to @arielhc)
+
+= 4.19 =
+
+* Added editor capabilities to review management (Thanks to @desclosf)
+* Fixed theme disabled toggle when style sheet option is altered
+
+= 4.18 =
+
+* Fixed rating and date issue in HTML Import (Thanks to @blymi)
+
+= 4.17 =
+
+* Added manual translations for relative times in Danish, Hebrew and Korean
+
+= 4.16 =
+
+* Fixed missing elements in some instances of parameter: review_item_order (Thanks to Baruch)
+* Fixed translate reviews into selected language
+* Added null value check in Widget’s Shortcode builder
+
+= 4.15 =
+
+* Added CSRF check to AJAX calls (Thanks to Rafie)
+* Fixed retrieval language translation option
+* Improved the appearance of the advice for the data retrieval sorting
+
+= 4.14 =
+
+* Added credential check for Dashboard AJAX calls (Thanks to Rafie)
+* Fixed missing argument in wp_kses function call
+* Tested with WordPress 6.2
+
+= 4.13 =
+
+* Added Czech language support for relative times (Thanks to @jakeob)
+* Fixed JavaScript error in Dashboard
+
+= 4.12 =
+
+* Added new parameters to Place API data retrieval
+* Added warning suppression for wp_remote_get function call in PHP 8.1+
+* Added new option to collect newest reviews through Places API (Thanks to @mazursv)
+* Added new information to retrieval record
+* Added image url retrieval check for missing images
+* Updated synchronization calculations to reflect retrieval sort
+* Increased retrieval record size
+* Set avatar size in HTML Import to 128 pixels (Thanks to Michael)
+* Fixed HTML Import for hotels and accommodation review listing (Thanks to @lescabottes)
+* Fixed string type warnings with PHP 8.1+
+* Fixed avatar parameter with an image URL
+* Fixed carousel navigation to prevent jumps
+* Tested with WordPress 6.1
+
+= 4.11 =
+
+* Fixed sanitization issues introduced in version 4.10
+
+= 4.10 =
+
+* Improved limits for previews of 5 and 6 column themes
+* Improved security through more vigorous variable santization and escaping
+* Tested with WordPress 6.0.2
+
+= 4.9 =
+
+* Tested with WordPress 6.0.1
+* Fixed minor styling issues in Dashboard
+
+= 4.8 =
+
+* Improvements to the grammar in Dashboard→Settings
+* Improved accuracy of Google Places API setup instructions
+* Added a link to a visual guide to setup the Google Places API
+* Added new parameter to specify image loading method (Thanks to @degorych)
+
+= 4.7 =
+
+* Added manual translations for relative times in Greek (Thanks to @theodorc)
+
+= 4.6 =
+
+* Added sorting by character and word counts
+* Added limit and offset when a list of IDs is specified
+* Updated plugin’s badge/icon
+* Tested with WordPress 6.0
+
+= 4.5 =
+
+* Added new parameter to set review text formatting
+
+= 4.4 =
+
+* Added new parameters to override the Google’s URLs for “read reviews” and “write a review”
+
+= 4.3 =
+
+* Fixed carousel view when set in Dashboard→Settings
+
+= 4.2 =
+
+* Fixed date issue in HTML Import (Thanks to @desclosf and @pierremartin310)
+
+= 4.1 =
+
+* Fixed missing Widget functionality in front-end
+* Minor improvements to review item styling
+* Improved preview styling
+
+= 4.0 =
+
+* Added carousel functionality
+* Added new themes
+* Added Dashboard Widget with recent reviews
+* Added new parameters and HTML classes to Shortcodes section
+* Added JavaScript preferences to Additional section
+* Added tile theme
+* Added display vicinity option to Widget
+* Added display avatar option to Widget
+* Added carousel functionality to Widget
+* Added recent reviews to the main Dashboard in a meta box
+* General improvements in Dashboard→Settings
+* Improved HTML Import versatility
+* Improved Widget management in Dashboard
+* Improved style sheet preferences; moved to Additional section
+* Improved handling of Widget – calling Shortcode method for HTML output
+* Improved HTML output within review list
+* Improved review item customisations
+* Fixed warning when avatar image is not included in API data (Thanks to Christopher)
+* Fixed rel parameter as null for its removal (Thanks to Robert)
+* Optimized style sheet
+
+= 3.45 =
+
+* Added no preference for retrieval language (Thanks to @mcian)
+* Added remote retrieval fields for Places API as an option
+
+= 3.44 =
+
+* Added display instance counter
+* Added carousel navigation HTML
+* Fixed incorrect review key name
+
+= 3.43 =
+
+* Added compressed/minified versions of JavaScript and CSS activated through respective options: *compress*
+* Added new parameters to handle future carousel/slider functionality
+
+= 3.42 =
+
+* Improved readability and grammar in some text strings within Dashboard→Settings
+* Improved Structured Data with better support for review authors (Thanks to @geroroe)
+
+= 3.41 =
+
+* Improved handling of themes and classes within class attribute
+* Improved consistency of star styling
+
+= 3.40 =
+
+* Updated fonts theme to more closely reflect reviews in Google
+* Fixed review filtering issue across multiple Widget instances
+* Added new set of SVG stars in yellow
+* Added two HTML classes to support sets of star colors
+* Optimized inline SVG in CSS
+
+= 3.39 =
+
+* Readded list of languages to Widget
+
+= 3.38 =
+
+* Added Right To Left (RTL) language support
+* Improved positioning of some elements
+
+= 3.37 =
+
+* Added informative error messages in cache clear
+* Improved core data handling
+
+= 3.36 =
+
+* Improved layout in preview for column themes
+* Fixed unexpected review filtering behaviour in some cases
+* Fixed multibyte character issue in review text
+* Fixed missing Widget
+
+= 3.35 =
+
+* Improved review limit handling in Dashboard→Settings
+* Minor improvements to styling in Dashboard→Settings
+* Minor improvements to HTML Import functionality
+* Tested with WordPress 5.8
+
+= 3.34 =
+
+* Minor improvements for smaller screens
+* Improvements to HTML Import (Thanks to @aitsatur and Allandora)
+
+= 3.33 =
+
+* Fixed disabled avatar images: no longer appearing in HTML (Thanks to @hsntgm)
+* Improved HTML Import to support additional structure (Thanks to Allandora)
+
+= 3.32 =
+
+* Improved HTML Import for hotels and accommodation review listing (Thanks to @ralphgl)
+* Fixed overall review count word (Thanks to @hitec4ever)
+* Added new Shortcode parameter to disable links (Thanks to @hsntgm)
+
+= 3.31 =
+
+* Added an option to skip JavaScript enqueue
+
+= 3.30 =
+
+* Improved Polish language support (Thanks to Tomek)
+* Moved billing account mention from Updates to API Key setup in Dashboard→Settings
+
+= 3.29 =
+
+* Fixed display issue in HTML Import when errors are highlighted
+* Added manual translations for relative times in Dutch and Polish
+
+= 3.28 =
+
+* Added additional translatable strings
+* Tested with WordPress 5.7
+
+= 3.26 =
+
+* Improved layout of Shortcode section with more examples
+* Added link to Demonstration website within Shortcode section
+
+= 3.25 =
+
+* Added the basic shortcode string to Setup section
+* Further improvements to Dashboard→Settings interface
+
+= 3.24 =
+
+* Reinserted missing wrapping element for settings
+
+= 3.23 =
+
+* Added week update interval for synchronization
+* Improved handling of non-plugin notices within plugin’s settings
+
+= 3.22 =
+
+* Improved processing of review text in HTML import
+
+= 3.21 =
+
+* Improved handling of the first, type parameter in shortcodes
+* Improved name formatting to support lowercase, uppercase and title case
+* Improved consistency of styling for dates
+* Added more themes
+* Added color schemes
+* Fixed first parameter as an alias of type
+
+= 3.20 =
+
+* Fixed sort argument in reviews filtering
+
+= 3.19 =
+
+* Corrected a some possible warnings in unset array elements
+* Improved appearance of some notices on settings page load
+* Improved sorting functionality for random shuffle to give more consistency
+* Added new review sorting option for shuffle
+
+= 3.18 =
+
+* Corrected a some possible warnings in unset array elements
+
+= 3.17 =
+
+* Fixed place information in Reviews section
+* Fixed review sorting in preview
+* Fixed name of a theme
+* Fixed relevance sorting as a parameter option
+* Improved listing of theme options in Shortcode section
+* Improved output of review text when none exists
+* Added bubble themes with outline and fill variants
+
+= 3.16 =
+
+* Fixed upgrade method
+* Fixed overall rating and review count for places with less than 5 reviews (Thanks to @santaklaus805)
+* Improved review delete functionality (Thanks to @thor_a)
+* Improved setting and sorting of review relevance (Thanks to @scartwright)
+* Improved fidelity of HTML Import with Place ID check
+* Checking and setting of Custom Style on upgrade (Thanks to @prometheusppc)
+
+= 3.15 =
+
+* Improved update for relative times (Thanks to @prometheusppc)
+* Improved functionality and corrected theme name in Widget Dashboard
+
+= 3.14 =
+
+* Improved Widget functionality in Dashboard
+* Corrected translation variable in HTML Import
+* Set image selection on Media Library selection; not close
+
+= 3.13 =
+
+* Hidden review count display when not included in summary list
+* Altered Dashboard notification styling to affect just the plugin
+* Added manual translations for relative times in German, Spanish, French and Italian
+
+= 3.12 =
+
+* Fixed Update input in Setup section so it doesn’t always set to “Never”
+* Added HTML classes for outline and padding
+* Added week update interval for synchronization
+
+= 3.11 =
+
+* Added a check for language value for the setup process in Dashboard→Settings
+
+= 3.10 =
+
+* Improved setting of existing API Key and Place ID
+* Improved visuals in Dashboard→Settings
+* Added a new welcome page when plugin is individually activated
+* Added new parameter values for name_format to support only first and last names
 
 = 3.9 =
 
@@ -165,7 +727,7 @@ Google does not send data for all places; only those currently found using the [
 
 = 3.5 =
 
-* Significant improvements to HTML import (Thanks to @hacaro, @gonab and @thor_a)
+* Significant improvements to HTML Import (Thanks to @hacaro, @gonab and @thor_a)
 
 = 3.4 =
 
@@ -200,14 +762,14 @@ Google does not send data for all places; only those currently found using the [
 * Improved icon and logo image selection script
 * Improved Place ID interface when multiple places exists in archive
 * Improved review_word parameter
-* Added HTML classes as a new section in the Shortcodes tab
+* Added HTML classes as a new section in the Shortcodes section
 * Added language support for parameter descriptions
 * Added tiny theme (Thanks to @humaniza)
 * Added stripe and stripe contrast styling
 * Added author switch layout
 * Added rating parameter
 * Added fill style to add a solid background color
-* Added list of pre-defined HTML classes to Shortcode tab
+* Added list of pre-defined HTML classes to Shortcode section
 * Added further information about places in Dashboard Reviews listing (for multiple places)
 
 = 2.19 =
@@ -234,7 +796,7 @@ Google does not send data for all places; only those currently found using the [
 = 2.15 =
 
 * Added a check for some instances when icon doesn’t exist in data archive
-* Improved notice messages for submissions in Advanced tab in Settings
+* Improved notice messages for submissions in Advanced section in Settings
 
 = 2.14 =
 
@@ -248,14 +810,14 @@ Google does not send data for all places; only those currently found using the [
 = 2.12 =
 
 * Significant improvements to requests of Google Places API and storage of data
-* Improved handling of other Places with storage of name, icon, vicinity, overall rating and review count 
+* Improved handling of other Places with storage of name, icon, vicinity, overall rating and review count
 * Improved stability of stars animation in JavaScript
 * Improved number formatting to use localize formatting style
 * Added color support for overall SVG rating stars with shortcode parameter or style sheet
 * Added parameter to show/hide overall rating stars
 * Added HTML entity version of rating stars
 * Fixed empty review count warning (Thanks to @havin)
-* Fixed missing value for Custom Styles textarea in Advanced tab
+* Fixed missing value for Custom Styles textarea in Advanced section
 
 = 2.11 =
 
@@ -350,7 +912,7 @@ Google does not send data for all places; only those currently found using the [
 = 1.30 =
 
 * Fixed empty shortcode attribute error (Thanks to @markima75)
-* Improved styling in Advanced tab in Dashboard→Settings for some screen sizes
+* Improved styling in Advanced section in Dashboard→Settings for some screen sizes
 
 = 1.29 =
 
@@ -510,11 +1072,11 @@ Google does not send data for all places; only those currently found using the [
 
 == Upgrade Notice ==
 
- 
+
 
 == Getting started with Google API ==
 
 In order to run this plugin, you will need a Google API Key and to locate your Place ID
 
-* [Google API Key Guidelines](https://developers.google.com/maps/documentation/javascript/get-api-key)
+* [Google API Key Guidelines](https://developers.google.com/maps/documentation/javascript/get-api-key) or [view our visual guide](https://designextreme.com/wordpress/gmbrr/#api-key) for the Google API Key setup
 * [Place ID Finder](https://developers.google.com/maps/documentation/javascript/examples/places-placeid-finder)

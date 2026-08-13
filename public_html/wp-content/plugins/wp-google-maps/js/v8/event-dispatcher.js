@@ -15,7 +15,7 @@ jQuery(function($) {
 	{
 		WPGMZA.assertInstanceOf(this, "EventDispatcher");
 		
-		this._listenersByType = [];
+		this._listenersByType = {};
 	}
 
 	/**
@@ -29,8 +29,6 @@ jQuery(function($) {
 	 */
 	WPGMZA.EventDispatcher.prototype.addEventListener = function(type, listener, thisObject, useCapture)
 	{
-		var arr;
-		
 		var types = type.split(/\s+/);
 		if(types.length > 1)
 		{
@@ -42,17 +40,20 @@ jQuery(function($) {
 		
 		if(!(listener instanceof Function))
 			throw new Error("Listener must be a function");
-
-		if(!(arr = this._listenersByType[type]))
-			arr = this._listenersByType[type] = [];
-			
+	
+		var target;
+		if(!this._listenersByType.hasOwnProperty(type))
+			target = this._listenersByType[type] = [];
+		else
+			target = this._listenersByType[type];
+		
 		var obj = {
 			listener: listener,
 			thisObject: (thisObject ? thisObject : this),
 			useCapture: (useCapture ? true : false)
 			};
 			
-		arr.push(obj);
+		target.push(obj);
 	}
 
 	/**
@@ -88,7 +89,7 @@ jQuery(function($) {
 		{
 			obj = arr[i];
 		
-			if(obj.listener == listener && obj.thisObject == thisObject && obj.useCapture == useCapture)
+			if((arguments.length == 1 || obj.listener == listener) && obj.thisObject == thisObject && obj.useCapture == useCapture)
 			{
 				arr.splice(i, 1);
 				return;
@@ -122,10 +123,9 @@ jQuery(function($) {
 	 * @memberof WPGMZA.EventDispatcher
 	 * @param {string|WPGMZA.Event} event Either the event type as a string, or an instance of WPGMZA.Event
 	 */
-	WPGMZA.EventDispatcher.prototype.dispatchEvent = function(event)
-	{
-		if(!(event instanceof WPGMZA.Event))
-		{
+	WPGMZA.EventDispatcher.prototype.dispatchEvent = function(event) {
+
+		if(!(event instanceof WPGMZA.Event)) {
 			if(typeof event == "string")
 				event = new WPGMZA.Event(event);
 			else
@@ -136,6 +136,8 @@ jQuery(function($) {
 					event[name] = src[name];
 			}
 		}
+
+
 
 		event.target = this;
 			
@@ -157,7 +159,15 @@ jQuery(function($) {
 		for(i = path.length - 1; i >= 0 && !event._cancelled; i--)
 			path[i]._triggerListeners(event);
 		
-		if(this.element)
+		// Native DOM event
+		var topMostElement = this.element;
+		for(var obj = this.parent; obj != null; obj = obj.parent)
+		{
+			if(obj.element)
+				topMostElement = obj.element;
+		}
+		
+		if(topMostElement)
 		{
 			var customEvent = {};
 			
@@ -170,8 +180,7 @@ jQuery(function($) {
 				
 				customEvent[key] = value;
 			}
-			
-			$(this.element).trigger(customEvent);
+			$(topMostElement).trigger(customEvent);
 		}
 	}
 

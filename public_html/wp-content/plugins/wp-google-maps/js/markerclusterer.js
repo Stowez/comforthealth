@@ -61,7 +61,6 @@
  */
 function MarkerClusterer(map, opt_markers, opt_options) {
 
-	//console.log("Clusterer created", this);
 
   // MarkerClusterer implements google.maps.OverlayView interface. We use the
   // extend function to extend MarkerClusterer with google.maps.OverlayView
@@ -228,7 +227,6 @@ MarkerClusterer.prototype.extend = function(obj1, obj2) {
  * @ignore
  */
 MarkerClusterer.prototype.onAdd = function() {
-	//console.log("onAdd called", this);
   this.setReady_(true);
 };
 
@@ -245,7 +243,6 @@ MarkerClusterer.prototype.draw = function() {};
  */
 MarkerClusterer.prototype.setupStyles_ = function() {
 	
-	//console.log("setupStyles called", this);
 	
   if (this.styles_.length) {
     return;
@@ -671,7 +668,12 @@ MarkerClusterer.prototype.getExtendedBounds = function(bounds) {
  * @private
  */
 MarkerClusterer.prototype.isMarkerInBounds_ = function(marker, bounds) {
-  return bounds.contains(marker.getPosition());
+  var latlng = marker.getPosition();
+  
+  if(window.WPGMZA && latlng instanceof WPGMZA.LatLng)
+	  latlng = latlng.toGoogleLatLng();
+  
+  return bounds.contains(latlng);
 };
 
 

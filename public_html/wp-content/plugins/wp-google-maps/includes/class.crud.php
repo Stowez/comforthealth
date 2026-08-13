@@ -2,6 +2,9 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 /**
  * The CRUD class is a base class which acts as an interface between any
  * objects which are stored on in the database and represented in server
@@ -18,10 +21,11 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	private $id;
 	private $table_name;
 	private $fields;
+	private $overrides;
 	private $modified;
 	
 	private $trashed = false;
-	
+
 	/**
 	 * Constructor
 	 * @param string $table_name The table name for this object type
@@ -31,53 +35,97 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	{
 		global $wpdb;
 		
+		$this->table_name = $table_name;
+		Crud::cacheColumnsByTableName($table_name);
+		
 		$this->fields = array();
+		$this->overrides = array();
 		
 		if(is_object($id_or_fields) || is_array($id_or_fields))
 		{
 			foreach($id_or_fields as $key => $value)
+			{
+				if($key == "id")
+					continue;
+				
 				$this->fields[$key] = $value;
+			}
+			
+			$obj = (object)$id_or_fields;
 			
 			if($read_mode == Crud::BULK_READ)
 			{
-				$obj = (object)$id_or_fields;
-				
 				if(!isset($obj->id))
 					throw new \Exception('Cannot bulk read without ID');
 				
-				$this->id = $obj->id;
+				$id = $this->id = $obj->id;
 			}
-				
-			if($read_mode != Crud::BULK_READ)
+			else if(!isset($obj->id))
 				$id = -1;
+				
+			// NB: Relaxed handling to avoid accidental duplication
+			if($read_mode != Crud::BULK_READ && isset($obj->id))
+			{
+				trigger_error('Crud class receieved data including an ID in single read mode. Did you mean to use bulk read, or single read and update?', E_USER_WARNING);
+			}
 		}
 		else if(preg_match('/^-?\d+$/', $id_or_fields))
 			$id = (int)$id_or_fields;
 		else
 			throw new \Exception('Invalid ID');
 		
-		$this->table_name = $table_name;
-		
 		$this->id = $id;
+		
+		if($read_mode != Crud::BULK_READ){
+			if($this->id == -1){
+				$this->create();
+			} else {
+				if(!empty($this->id)){
+					// Only attempt a read if not empty as this can lead to erroneous error being thrown
+					$this->read(Marker::SINGLE_READ);
+				}
+			}
+		} else {
+			$arbitraryDataColumnName = $this->get_arbitrary_data_column_name();
+			
+			if(!empty($arbitraryDataColumnName) && !empty($this->fields[$arbitraryDataColumnName]))
+				$this->parse_arbitrary_data($this->fields[$arbitraryDataColumnName]);
+		}
+		
+		$this->onCrudInitialized();
+	}
+	
+	protected function onCrudInitialized()
+	{
+		
+	}
+	
+	private static function cacheColumnsByTableName($table_name)
+	{
+		global $wpdb;
 		
 		if(!isset(Crud::$cached_columns_by_table_name))
 			Crud::$cached_columns_by_table_name = array();
 		
-		if(!isset(Crud::$cached_columns_by_table_name[$table_name]))
+		if(isset(Crud::$cached_columns_by_table_name[$table_name]))
+			return;
+		
+		$columns = $wpdb->get_results("SHOW COLUMNS FROM $table_name");
+		
+		Crud::$cached_column_name_map_by_table_name[$table_name] = array();
+		foreach($columns as $col)
 		{
-			$columns = $wpdb->get_results("SHOW COLUMNS FROM $table_name");
-			
-			Crud::$cached_column_name_map_by_table_name[$table_name] = array();
-			foreach($columns as $col)
-				Crud::$cached_column_name_map_by_table_name[$table_name][$col->Field] = true;
-			
-			Crud::$cached_columns_by_table_name[$table_name] = $columns;
+			Crud::$cached_column_name_map_by_table_name[$table_name][$col->Field] = $col;
 		}
 		
-		if($this->id == -1)
-			$this->create();
-		else
-			$this->read(Marker::SINGLE_READ);
+		Crud::$cached_columns_by_table_name[$table_name] = $columns;
+	}
+	
+	public static function getColumnsByTableName($table_name)
+	{
+		Crud::cacheColumnsByTableName($table_name);
+		
+		return Crud::$cached_columns_by_table_name[$table_name];
 	}
 	
 	public static function bulk_read($data, $constructor)
@@ -110,6 +158,7 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		$stmt = $wpdb->prepare("DELETE FROM `{$table_name}` WHERE id IN ($placeholders)", $ids);
 		$wpdb->query($stmt);
 	}
+
 	
 	/**
 	 * Gets the table name for this object type
@@ -136,6 +185,11 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	public function get_column_names()
 	{
 		return array_keys( Crud::$cached_column_name_map_by_table_name[$this->table_name] );
+	}
+	
+	public function get_columns_by_name()
+	{
+		return Crud::$cached_column_name_map_by_table_name[$this->table_name];
 	}
 	
 	/**
@@ -182,20 +236,6 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 			case 'real':
 				$placeholder = '%f';
 				break;
-				
-			/*case 'geometry':
-			case 'point':
-			case 'linestring':
-			case 'polygon':
-			case 'multipoint':
-			case 'multilinestring':
-			case 'multipolygon':
-			case 'geometrycollection':
-				$placeholders[] = 'NULL';
-				
-				// This can be implemented in a subclass
-				
-				break;*/
 				
 			default:
 				$placeholder = '%s';
@@ -303,6 +343,9 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		
 		foreach($data as $key => $value)
 			$this->fields[$key] = $value;
+			
+		$name = $this->get_arbitrary_data_column_name();
+		unset($this->fields[$name]);
 	}
 	
 	/**
@@ -338,10 +381,19 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		$parameters		= $this->get_column_parameters();
 		
 		$qstr = "INSERT INTO `{$this->table_name}` ($column_names) VALUES ($placeholders)";
+		
 		$stmt = $wpdb->prepare($qstr, $parameters);
 		$wpdb->query($stmt);
 		
 		$this->id = $wpdb->insert_id;
+
+		/* Developer Hook (Action) - CRUD Create */
+		do_action('wpgmza_crud_create', $this);
+	}
+	
+	protected function getReadColumns()
+	{
+		return array("*");
 	}
 	
 	/**
@@ -355,18 +407,21 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		
 		$this->assert_not_trashed();
 		
-		$stmt = $wpdb->prepare("SELECT * FROM " . $this->get_table_name() . " WHERE id = %d", array($this->id));
+		$columns = implode(', ', $this->getReadColumns());
+		
+		$stmt = $wpdb->prepare("SELECT $columns FROM " . $this->get_table_name() . " WHERE id = %d", array($this->id));
+		
 		$results = $wpdb->get_results($stmt);
 		
 		if(empty($results))
-			throw new \Exception('Map object not found');
+			throw new \Exception(get_called_class() . " ID '{$this->id}' not found");
 		
 		$this->fields = (array)$results[0];
 		unset($this->fields['id']);
 		
 		$arbitrary_data_column_name = $this->get_arbitrary_data_column_name();
 		
-		if($arbitrary_data_column_name && isset($this->fields->arbitrary_data_column_name))
+		if($arbitrary_data_column_name && isset($this->fields[$arbitrary_data_column_name]))
 		{
 			$this->parse_arbitrary_data($this->fields[$arbitrary_data_column_name]);
 			unset($this->fields[$arbitrary_data_column_name]);
@@ -446,6 +501,9 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 			$wpdb->query($stmt);
 		}
 		
+		/* Developer Hook (Action) - CRUD Update */
+		do_action('wpgmza_crud_update', $this);
+
 		return $this;
 	}
 	
@@ -464,7 +522,37 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		
 		$wpdb->query($stmt);
 		
+		/* Developer Hook (Action) - CRUD Trash */
+		do_action('wpgmza_crud_trash', $this);
+
 		$this->trashed = true;
+	}
+	
+	public function duplicate()
+	{
+		global $wpdb;
+		
+		$columns = array();
+		
+		foreach($wpdb->get_col("SHOW COLUMNS FROM `{$this->table_name}`") as $name)
+		{
+			if($name == 'id')
+				continue;
+			
+			$columns []= $name;
+		}
+		
+		$imploded = implode(',', $columns);
+		
+		$query = "INSERT INTO {$this->table_name} ($imploded) SELECT $imploded FROM {$this->table_name} WHERE id=%d";
+		
+		$stmt = $wpdb->prepare($query, $this->id);
+		
+		$wpdb->query($stmt);
+		
+		$class = get_class($this);
+		
+		return $class::createInstance($wpdb->insert_id);
 	}
 	
 	/**
@@ -477,24 +565,44 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	{
 		$this->assert_not_trashed();
 		
-		if(is_string($arg))
-		{
+		if(is_string($arg)){
+			if(is_string($val)){
+				$val = wp_kses_post($val);
+			}
 			$this->__set($arg, $val);
-		}
-		else if(is_array($arg) || is_object($arg))
-		{
-			foreach($arg as $key => $value)
-			{
-				if($this->is_read_only($key))
+		} else if(is_array($arg) || is_object($arg)){
+			foreach($arg as $key => $value){
+				if($this->is_read_only($key)){
 					throw new \Exception('Property is read only');
+				}
 				
+				if(is_string($value)){
+					$value = wp_kses_post($value);
+				}
+
+				if($key === 'link' || $key === 'title'){
+					$value = html_entity_decode($value);
+				}
+
 				$this->fields[$key] = $value;
 			}
 			
 			$this->update();
-		}
-		else
+		} else{
 			throw new \Exception('Invalid argument');
+		}
+		
+		return $this;
+	}
+	
+	/**
+	 * Sets a variable on the object without writing to the database. Useful for overriding properties
+	 */
+	public function override($key, $value)
+	{
+		$this->assert_not_trashed();
+		
+		$this->overrides[$key] = $value;
 		
 		return $this;
 	}
@@ -504,6 +612,7 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	 * @throws \Exception The object has been trashed
 	 * @return \ArrayIterator
 	 */
+	#[\ReturnTypeWillChange]
 	public function getIterator()
 	{
 		$this->assert_not_trashed();
@@ -516,11 +625,20 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	 * @throws \Exception
 	 * @return array
 	 */
+	#[\ReturnTypeWillChange]
 	public function jsonSerialize()
 	{
 		$this->assert_not_trashed();
 		
-		return array_merge($this->fields, array('id' => $this->id));
+		if(!is_array($this->fields))
+			throw new \Exception("Field data is not an array");
+		
+		$serialize = array_merge($this->fields, array('id' => $this->id));
+		
+		/* Developer Hook (Action) - CRUD Serialize */
+		$serialize = apply_filters('wpgmza_crud_serialize', $serialize, $this);
+		
+		return $serialize;
 	}
 	
 	/**
@@ -533,8 +651,13 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	{
 		$this->assert_not_trashed();
 		
-		if(isset($this->fields[$name]))
+		if(isset($this->overrides[$name])){
+			return $this->overrides[$name];
+		}
+
+		if(isset($this->fields[$name])){
 			return $this->fields[$name];
+		}
 		
 		switch($name)
 		{
@@ -542,7 +665,7 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 			case 'modified':
 			case 'custom_fields':
 				return $this->{$name};
-				break;				
+				break;
 		}
 		
 		return null;
@@ -557,6 +680,9 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 	public function __isset($name)
 	{
 		$this->assert_not_trashed();
+		
+		if($name == 'id')
+			return true;
 		
 		return isset($this->fields[$name]);
 	}
@@ -578,6 +704,11 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		if($this->is_read_only($name))
 			throw new \Exception('Property is read only');
 		
+		if(is_string($value)){
+			// $value = htmlspecialchars_decode(wp_kses_post($value));
+			$value = wp_kses_post($value);
+		}
+		
 		$this->fields[$name] = $value;
 		
 		$columns = $this->get_columns();
@@ -594,6 +725,9 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 			$stmt = $wpdb->prepare("UPDATE {$this->table_name} SET $name = $placeholder WHERE id = %d", $params);
 			$wpdb->query($stmt);
 			
+			/* Developer Hook (Action) - CRUD Update Single */
+			do_action('wpgmza_crud_update', $this, [$name]);
+
 			return;
 		}
 		
@@ -604,7 +738,8 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		
 		$stmt = $wpdb->prepare("SELECT $arbitrary_data_column_name FROM {$this->table_name} WHERE id=%d", array($this->id));
 		
-		$data = maybe_unserialize($wpdb->get_var());
+		$raw = $wpdb->get_var($stmt);
+		$data = maybe_unserialize($raw);
 		
 		if(empty($data))
 			$data = array();
@@ -628,7 +763,7 @@ class Crud extends Factory implements \IteratorAggregate, \JsonSerializable
 		$column_names = $this->get_column_names();
 		
 		if(array_search($name, $column_names) !== false)
-			throw \Exception('Only arbitrary data can be unset. Columns must be set to NULL instead');
+			throw new \Exception('Only arbitrary data can be unset. Columns must be set to NULL instead');
 		
 		unset($this->fields[$name]);
 		

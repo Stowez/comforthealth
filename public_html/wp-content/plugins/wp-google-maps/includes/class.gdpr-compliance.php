@@ -2,6 +2,9 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 /**
  * This module handles all GDPR functionality for the plugin, including
  * displaying notices, settings and handling logic
@@ -14,20 +17,13 @@ class GDPRCompliance
 	{
 		if(!GDPRCompliance::$filtersBound)
 		{
-			add_filter('wpgmza_global_settings_tabs', array($this, 'onGlobalSettingsTabs'));
-			add_filter('wpgmza_global_settings_tab_content', array($this, 'onGlobalSettingsTabContent'), 10, 1);
+			//add_filter('wpgmza_global_settings_tabs', array($this, 'onGlobalSettingsTabs'));
+			//add_filter('wpgmza_global_settings_tab_content', array($this, 'onGlobalSettingsTabContent'), 10, 1);
 			
 			add_filter('wpgmza_plugin_get_default_settings', array($this, 'onPluginGetDefaultSettings'));
 			
 			GDPRCompliance::$filtersBound = true;
 		}
-		
-		add_action('wp_ajax_wpgmza_gdpr_privacy_policy_notice_dismissed', array($this, 'onPrivacyPolicyNoticeDismissed'));
-		
-		//add_action('admin_notices', array($this, 'onAdminNotices'));
-		//add_action('admin_post_wpgmza_dismiss_admin_gdpr_warning', array($this, 'onDismissAdminWarning'));
-		
-		//$this->setDefaultSettings();
 	}
 	
 	/**
@@ -36,6 +32,8 @@ class GDPRCompliance
 	 */
 	public function getDefaultSettings()
 	{
+
+		/* Developer Hook (Filter) - Alter the default GDPR notice */
 		return array(
 			'wpgmza_gdpr_enabled'			=> 1,
 			'wpgmza_gdpr_default_notice'	=> apply_filters('wpgmza_gdpr_notice',
@@ -47,10 +45,10 @@ class GDPRCompliance
 	I agree for my personal data, provided via map API calls, to be processed by the API provider, for the purposes of geocoding (converting addresses to coordinates), reverse geocoding and	generating directions.
 </p>
 <p>
-	Some visual components of WP Google Maps use 3rd party libraries which are loaded over the network. At present the libraries are Google Maps, Open Street Map, jQuery DataTables and FontAwesome. When loading resources over a network, the 3rd party server will receive your IP address and User Agent string amongst other details. Please refer to the Privacy Policy of the respective libraries for details on how they use data and the process to exercise your rights under the GDPR regulations.
+	Some visual components of WP Go Maps use 3rd party libraries which are loaded over the network. At present the libraries are Google Maps, Open Street Map, jQuery DataTables and FontAwesome. When loading resources over a network, the 3rd party server will receive your IP address and User Agent string amongst other details. Please refer to the Privacy Policy of the respective libraries for details on how they use data and the process to exercise your rights under the GDPR regulations.
 </p>
 <p>
-	WP Google Maps uses jQuery DataTables to display sortable, searchable tables, such as that seen in the Advanced Marker Listing and on the Map Edit Page. jQuery DataTables in certain circumstances uses a cookie to save and later recall the "state" of a given table - that is, the search term, sort column and order and current page. This data is held in local storage and retained until this is cleared manually. No libraries used by WP Google Maps transmit this information.
+	WP Go Maps uses jQuery DataTables to display sortable, searchable tables, such as that seen in the Advanced Marker Listing and on the Map Edit Page. jQuery DataTables in certain circumstances uses a cookie to save and later recall the "state" of a given table - that is, the search term, sort column and order and current page. This data is held in local storage and retained until this is cleared manually. No libraries used by WP Go Maps transmit this information.
 </p>
 <p>
 	Please <a href="https://developers.google.com/maps/terms">see here</a> and <a href="https://maps.google.com/help/terms_maps.html">here</a> for Google\'s terms. Please also see <a href="https://policies.google.com/privacy?hl=en-GB&amp;gl=uk">Google\'s Privacy Policy</a>. We do not send the API provider any personally identifying information, or information that could uniquely identify your device.
@@ -60,7 +58,8 @@ class GDPRCompliance
 </p>'), 'wp-google-maps'),
 
 			'wpgmza_gdpr_company_name'		=> get_bloginfo('name'),
-			'wpgmza_gdpr_retention_purpose' => 'displaying map tiles, geocoding addresses and calculating and display directions.'
+			'wpgmza_gdpr_retention_purpose' => 'displaying map tiles, geocoding addresses and calculating and display directions.',
+			'wpgmza_gdpr_button_label' => 'I agree'
 		);
 	}
 	
@@ -74,28 +73,11 @@ class GDPRCompliance
 	}
 	
 	/**
-	 * Called when the user dismisses the "check our updated privacy policy" admin notice, this call is made over AJAX. This sets a flag so the notice isn't displayed again.
-	 * @return void
-	 */
-	public function onPrivacyPolicyNoticeDismissed()
-	{
-		$wpgmza_other_settings = get_option('WPGMZA_OTHER_SETTINGS');
-		$wpgmza_other_settings['privacy_policy_notice_dismissed'] = true;
-		
-		update_option('WPGMZA_OTHER_SETTINGS', $wpgmza_other_settings);
-		
-		wp_send_json(array(
-			'success' => 1
-		));
-		
-		exit;
-	}
-	
-	/**
 	 * Called by onGlobalSettingsTabContent to add the content to our GDPR tab on the settings page, triggered by the filter wpgmza_global_settings_tab_content.
+	 * @deprecated Built into the settings page as of 8.1.0, provided for legacy support
 	 * @return DOMDocument The GDPR tab content
 	 */
-	protected function getSettingsTabContent()
+	public function getSettingsTabContent()
 	{
 		global $wpgmza;
 		
@@ -107,6 +89,7 @@ class GDPRCompliance
 		$document = new DOMDocument();
 		$document->loadPHPFile(plugin_dir_path(__DIR__) . 'html/gdpr-compliance-settings.html.php');
 		
+		/* Developer Hook (Filter) - Alter the GDPR settings tab, passes DOMDocument for mutation, must return DOMDocument */
 		$document = apply_filters('wpgmza_gdpr_settings_tab_content', $document);
 		
 		$document->populate($settings);
@@ -123,7 +106,10 @@ class GDPRCompliance
 	{
 		$wpgmza_other_settings = array_merge( (array)$this->getDefaultSettings(), get_option('WPGMZA_OTHER_SETTINGS') );
 		
-		$html = $wpgmza_other_settings['wpgmza_gdpr_default_notice'];
+		$wpgmza_other_settings = apply_filters('wpgmza_gdpr_options', $wpgmza_other_settings);
+
+		/* Developer Hook (Filter) - Alter GDPR HTML output by the plugin */
+		$html = apply_filters('wpgmza_gdpr_notice', $wpgmza_other_settings['wpgmza_gdpr_default_notice']);
 		
 		if(!empty($wpgmza_other_settings['wpgmza_gdpr_override_notice']) && !empty($wpgmza_other_settings['wpgmza_gdpr_notice_override_text']))
 			$html = $wpgmza_other_settings['wpgmza_gdpr_notice_override_text'];
@@ -139,10 +125,36 @@ class GDPRCompliance
 		if($checkbox)
 			$html = '<input type="checkbox" name="wpgmza_ugm_gdpr_consent" required/> ' . $html;
 		
+		/* Developer Hook (Filter) - Alter GDPR Notice HTML */
 		$html = apply_filters('wpgmza_gdpr_notice_html', $html);
 		
+		if(empty($html))
+			return "";
+		
 		$document = new DOMDocument();
-		@$document->loadHTML( utf8_decode($html) );
+
+		try{
+			if(version_compare(phpversion(), '8.2', '>=') && function_exists('mb_encode_numericentity')){
+				/* Deprecations in PHP require us to rework the way we do conversions */
+				$converted = htmlspecialchars_decode(mb_encode_numericentity(htmlentities($html, ENT_QUOTES, 'UTF-8'), [0x80, 0x10FFFF, 0, ~0], 'UTF-8'));
+				$html = $converted;
+			} else {
+				if(function_exists('mb_convert_encoding')){
+					$html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
+				} else{
+					trigger_error('Using fallback UTF to HTML entity conversion', E_USER_NOTICE);
+					$html = htmlspecialchars_decode(utf8_decode(htmlentities($html, ENT_COMPAT, 'utf-8', false)));
+				}
+			}
+		} catch (\Exception $ex){
+			if(function_exists('mb_convert_encoding')){
+				$html = mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8');
+			} else if(version_compare(phpversion(), '8.2', '<') && function_exists('utf8_decode')){
+				$html = utf8_decode($html);
+			}
+		}
+
+		@$document->loadHTML($html);
 		$document->populate($wpgmza_other_settings);
 		
 		return $document->saveInnerBody();
@@ -156,12 +168,15 @@ class GDPRCompliance
 	{
 		global $wpgmza;
 		
+		// Dropped in 7.11.*
+		return '';
+		
 		if(!empty($wpgmza->settings->privacy_policy_notice_dismissed))
 			return '';
 		
 		return "
 			<div id='wpgmza-gdpr-privacy-policy-notice' class='notice notice-info is-dismissible'>
-				<p>" . __('In light of recent EU GDPR regulation, we strongly recommend reviewing the <a target="_blank" href="https://www.wpgmaps.com/privacy-policy">WP Google Maps Privacy Policy</a>', 'wp-google-maps') . "</p>
+				<p>" . __('In light of recent EU GDPR regulation, we strongly recommend reviewing the <a target="_blank" href="https://www.wpgmaps.com/privacy-policy">WP Go Maps Privacy Policy</a>', 'wp-google-maps') . "</p>
 			</div>
 			";
 	}
@@ -172,7 +187,25 @@ class GDPRCompliance
 	 */
 	public function getConsentPromptHTML()
 	{
-		return '<div class="wpgmza-gdpr-compliance">' . $this->getNoticeHTML(false) . "<p class='wpgmza-centered'><button class='wpgmza-api-consent'>" . __('I agree', 'wp-google-maps') . "</button></div></p>";
+		$wpgmza_other_settings = array_merge( (array)$this->getDefaultSettings(), get_option('WPGMZA_OTHER_SETTINGS') );
+		$wpgmza_other_settings = apply_filters('wpgmza_gdpr_options', $wpgmza_other_settings);
+		
+		$button_label = ((empty($wpgmza_other_settings['wpgmza_gdpr_button_label']) || $wpgmza_other_settings['wpgmza_gdpr_button_label'] === 'I agree') ? __('I agree', 'wp-google-maps') : $wpgmza_other_settings['wpgmza_gdpr_button_label']);
+
+		$style = !empty($wpgmza_other_settings['wpgmza_gdpr_style']) && $wpgmza_other_settings['wpgmza_gdpr_style'] === 'legacy' ? 'legacy' : 'modern';
+		
+		$buttonHtml = "<p class='wpgmza-centered wpgmza-gdpr-button-container'><button class='wpgmza-api-consent'>" . $button_label . "</button></p>";
+		$innerHtml = $this->getNoticeHTML(false) . $buttonHtml;
+
+		$imageHtml = "";
+		if(!empty($style) && $style === 'modern'){
+			$imageHtml = "<div class='wpgmza-gdpr-image-placeholder'><img src='" . WPGMZA_PLUGIN_DIR_URL . "/images/default.png' /></div>";
+
+			$innerHtml = $this->getNoticeHTML(false);
+			$innerHtml = "<div class='wpgmza-gdpr-notice-card'><div class='wpgmza-gdpr-inner-notice'>{$innerHtml}</div>{$buttonHtml}</div>";
+		}
+
+		return '<div class="wpgmza-gdpr-compliance ' . $style . '">' . $imageHtml . $innerHtml . "</div>";
 	}
 	
 	/**
@@ -198,6 +231,8 @@ class GDPRCompliance
 	
 	/**
 	 * Handles POST data when the settings page saves.
+	 * NB: Deprecated as of 8.1.0. The settings page module handles this.
+	 * @deprecated
 	 * @return void
 	 */
 	public function onPOST()
@@ -235,7 +270,7 @@ class GDPRCompliance
 			}
 		}
 		
-		update_option('WPGMZA_OTHER_SETTINGS', $wpgmza_other_settings);
+		update_option('WPGMZA_OTHER_SETTINGS', $wpgmza_other_settings, false);
 	}
 }
 

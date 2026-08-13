@@ -1,32 +1,11 @@
 jQuery( document ).ready(function() {
 
-  // toggle the helper classes that show the form structure
-  jQuery('.toggle_helpers input[type=checkbox]').attr('checked',false);
-
-  jQuery('#showgrid').click(function(){
-    if(jQuery(this).is(":checked")) {
-      jQuery('#preview_form_container').addClass("showgrid");
-    } else {
-      jQuery('#preview_form_container').removeClass("showgrid");
-    }
-  });
-
-  jQuery('#showme').click(function(){
-    if(jQuery(this).is(":checked")) {
-      jQuery('.gform_wrapper form').addClass("gf_showme");
-      jQuery('#helper_legend_container').css("display", "inline-block");
-    } else {
-      jQuery('.gform_wrapper form').removeClass("gf_showme");
-      jQuery('#helper_legend_container').css("display", "none");
-    }
-  });
-
   // dismiss the alerts and set a cookie
 
   if (GetCookie("dismissed-notifications")) {
     jQuery(GetCookie("dismissed-notifications")).hide();
   }
-  jQuery(".hidenotice").click(function () {
+  jQuery(".hidenotice").on( 'click', function () {
     var alertId = jQuery(this).closest(".preview_notice").attr("id");
     var dismissedNotifications = GetCookie("dismissed-notifications") + ",#" + alertId;
     jQuery(this).closest(".preview_notice").slideToggle('slow');
@@ -61,7 +40,7 @@ jQuery( document ).ready(function() {
   jQuery('#browser_size_info').text('Viewport ( Width : '
     + jQuery(window).width() + 'px , Height :' + jQuery(window).height() + 'px )');
 
-  jQuery(window).resize(function () {
+  jQuery(window).on( 'resize', function () {
     jQuery('#browser_size_info').text('Viewport ( Width : ' + jQuery(window).width()
       + 'px , Height :' + jQuery(window).height() + 'px )');
   });

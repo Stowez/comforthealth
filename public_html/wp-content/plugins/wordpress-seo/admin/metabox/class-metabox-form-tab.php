@@ -62,7 +62,7 @@ class WPSEO_Metabox_Form_Tab implements WPSEO_Metabox_Tab {
 	/**
 	 * Does it contain a single tab.
 	 *
-	 * @var boolean
+	 * @var bool
 	 */
 	private $single;
 
@@ -74,14 +74,14 @@ class WPSEO_Metabox_Form_Tab implements WPSEO_Metabox_Tab {
 	 * @param string $link_content The text content of the tab link.
 	 * @param array  $options      Optional link attributes.
 	 */
-	public function __construct( $name, $content, $link_content, array $options = array() ) {
-		$default_options = array(
+	public function __construct( $name, $content, $link_content, array $options = [] ) {
+		$default_options = [
 			'tab_class'       => '',
 			'link_class'      => '',
 			'link_title'      => '',
 			'link_aria_label' => '',
 			'single'          => false,
-		);
+		];
 
 		$options = array_merge( $default_options, $options );
 
@@ -111,11 +111,11 @@ class WPSEO_Metabox_Form_Tab implements WPSEO_Metabox_Tab {
 		return sprintf(
 			$html,
 			esc_attr( $this->name ),
-			( '' !== $this->tab_class ) ? ' ' . esc_attr( $this->tab_class ) : '',
-			( '' !== $this->link_class ) ? ' ' . esc_attr( $this->link_class ) : '',
-			( '' !== $this->link_title ) ? ' title="' . esc_attr( $this->link_title ) . '"' : '',
-			( '' !== $this->link_aria_label ) ? ' aria-label="' . esc_attr( $this->link_aria_label ) . '"' : '',
-			$this->link_content
+			( $this->tab_class !== '' ) ? ' ' . esc_attr( $this->tab_class ) : '',
+			( $this->link_class !== '' ) ? ' ' . esc_attr( $this->link_class ) : '',
+			( $this->link_title !== '' ) ? ' title="' . esc_attr( $this->link_title ) . '"' : '',
+			( $this->link_aria_label !== '' ) ? ' aria-label="' . esc_attr( $this->link_aria_label ) . '"' : '',
+			$this->link_content,
 		);
 	}
 
@@ -129,7 +129,7 @@ class WPSEO_Metabox_Form_Tab implements WPSEO_Metabox_Tab {
 			'<div id="%1$s" class="wpseotab %2$s">%3$s</div>',
 			esc_attr( 'wpseo_' . $this->name ),
 			esc_attr( $this->name ),
-			$this->content
+			$this->content,
 		);
 	}
 }

@@ -34,7 +34,6 @@ class google_business_reviews_rating_cron
 		wp_clear_scheduled_hook('google_business_reviews_rating_run');
 		
 		return TRUE;
-		
 	}
 	
 	public function cron_cast()

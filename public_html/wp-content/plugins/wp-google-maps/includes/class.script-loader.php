@@ -2,6 +2,9 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 // TODO: Remove, an autoloader is now used
 require_once(plugin_dir_path(__FILE__) . 'google-maps/class.google-maps-loader.php');
 require_once(plugin_dir_path(__FILE__) . 'open-layers/class.ol-loader.php');
@@ -13,9 +16,11 @@ require_once(plugin_dir_path(__FILE__) . 'open-layers/class.ol-loader.php');
  *
  * When not in developer mode, this class is simply used to enqueue the minified file, or, the combined file if that is more up to date. That can happen when changes have been made and the combined file has been re-built without the minified file being rebuilt.
  */
+#[\AllowDynamicProperties]
 class ScriptLoader
 {
 	private static $dependencyErrorDisplayed = false;
+	private static $combinedFileBlankErrorDisplayed = false;
 	
 	private $proMode = false;
 	private $logStarted = false;
@@ -31,7 +36,7 @@ class ScriptLoader
 	 * @param bool $proMode Whether or not to enqueue (and optionally build) the Pro scripts.
 	 * @todo This class should inherit Factory rather than using a variable to represent pro.
 	 */
-	public function __construct($proMode)
+	public function __construct($proMode=false)
 	{
 		$this->proMode = $proMode;
 		
@@ -39,6 +44,12 @@ class ScriptLoader
 			$this->scriptsFileLocation = plugin_dir_path(WPGMZA_PRO_FILE) . 'js/v8/pro-scripts.json';
 		else
 			$this->scriptsFileLocation = plugin_dir_path(__DIR__) . 'js/v8/scripts.json';
+
+		if (function_exists('add_filter')) {
+			add_filter('wpgmza-get-library-dependencies', array($this, 'dequeueDataTablesScript'), 10, 1);
+
+			add_filter('wpgmza-get-scripts-arguments', array($this, 'getScriptArguments'), 10, 1);
+		}
 	}
 	
 	/**
@@ -48,6 +59,9 @@ class ScriptLoader
 	 */
 	protected function log($str)
 	{
+		// Disabled in production. Left here for developers wishing to debug build issues.
+		return;
+		
 		$dest = __DIR__ . '/build.log';
 		
 		if(!$this->logStarted)
@@ -108,10 +122,14 @@ class ScriptLoader
 		$minified = ($wpgmza->isUsingMinifiedScripts() ? '.min' : '');
 		
 		$libraryDependencies = array(
-			'datatables'		=> $plugin_dir_url . "js/jquery.dataTables{$minified}.js",
-			'javascript-cookie'	=> $plugin_dir_url . 'lib/jquery-cookie.js',
-			'remodal'			=> $plugin_dir_url . "lib/remodal{$minified}.js",
-			'spectrum'			=> $plugin_dir_url . 'lib/spectrum.js'
+			'datatables'			=> $plugin_dir_url . "js/jquery.dataTables{$minified}.js",
+			'javascript-cookie'		=> $plugin_dir_url . 'lib/jquery-cookie.js',
+			'remodal'				=> $plugin_dir_url . "lib/remodal{$minified}.js",
+			// PEP JS for iOS 12 pointer events
+			'pepjs'					=> $plugin_dir_url . 'lib/pep.js',
+			// TODO: These are only needed if the server supports inflate
+			'fast-text-encoding'	=> $plugin_dir_url . 'lib/text.js',
+			'pako'					=> $plugin_dir_url . 'lib/pako_deflate.min.js'
 		);
 		
 		/*if($wpgmza->isProVersion())
@@ -135,6 +153,7 @@ class ScriptLoader
 			wp_enqueue_script('jquery-ui-draggable');
 		}
 		
+		/* Developer Hook (Filter) - Add or alter library dependencies */
 		return apply_filters('wpgmza-get-library-dependencies', $libraryDependencies);
 	}
 	
@@ -175,7 +194,7 @@ class ScriptLoader
 		
 		foreach($directories as $dir => $path)
 		{
-			$pro_directory = (preg_match('/-pro/', $dir) ? true : false);
+			$pro_directory = (preg_match('/maps-pro/', $dir) ? true : false);
 			$files = $this->rglob("$dir/*.js");
 		
 			foreach($files as $file)
@@ -284,12 +303,11 @@ class ScriptLoader
 		{
 			if(++$iterations > 100000)
 			{
-				if(!ScriptLoader::$dependencyErrorDisplayed)
-				{
+				if(!ScriptLoader::$dependencyErrorDisplayed && !(defined('REST_REQUEST') && REST_REQUEST)) {
 					?>
 					<div class="notice notice-error">
 						<p>
-							WP Google Maps: Build failed. Dumping unresolved dependencies
+							WP Go Maps: Build failed. Dumping unresolved dependencies
 						</p>
 						
 						<?php
@@ -304,7 +322,7 @@ class ScriptLoader
 						?>
 						
 						<p>
-							Are you debugging or developing WP Google Maps? If not, please disable developer mode in Maps &rarr; Settings &rarr; Advanced to remove this notice.
+							Are you debugging or developing WP Go Maps? If not, please disable developer mode in Maps &rarr; Settings &rarr; Advanced to remove this notice.
 						</p>
 					</div>
 					<?php
@@ -398,7 +416,37 @@ class ScriptLoader
 			return;	// No changes, leave the file alone. Updating the file would cause the combined script to be newer than the minified script
 		
 		if(empty($combined))
-			throw new \Exception('Combined file would be blank.');
+		{
+			if(function_exists('add_action'))
+			{
+				if(!ScriptLoader::$combinedFileBlankErrorDisplayed)
+				{
+					add_action('admin_notices', function() {
+						?>
+						<div class='notice notice-error'>
+							<?php
+							_e("
+							<p>
+								<strong>WP Go Maps:</strong> Failed to build combined script file, the resulting file would be blank.
+							</p>
+							<p>
+								<strong>Developers:</strong> Please check that the file is writable and that all script dependencies are resolved.
+							</p>
+							<p>
+								<strong>Users:</strong> Please disable \"Developer Mode\" in Maps &rarr; Settings &rarr; Advanced.
+							</p>
+							");
+							?>
+						</div>
+						<?php
+					});
+					
+					ScriptLoader::$combinedFileBlankErrorDisplayed = true;
+				}
+			}
+			else
+				throw new \Exception('Combined file would be blank.');
+		}
 		
 		file_put_contents($dest, $combined);
 	}
@@ -409,24 +457,84 @@ class ScriptLoader
 	 */
 	public function build()
 	{
-		$this->scanDependencies();
-		$this->buildCombinedFile();
+		if($this->canRecompile()){
+			$this->scanDependencies();
+			$this->buildCombinedFile();
+		}
 	}
 	
 	/**
 	 * Enqueues all required stylesheets
 	 * @return void
 	 */
-	public function enqueueStyles()
+	public function enqueueStyles($forceLoad=false)
 	{	
 		global $wpgmza;
-	
-		// wp_enqueue_style('wpgmza-color-picker', plugin_dir_url(__DIR__) . 'lib/spectrum.css');
-		// wp_enqueue_style('datatables', '//cdn.datatables.net/1.10.13/css/jquery.dataTables.min.css');
 		
-		wp_enqueue_style('wpgmza-common', plugin_dir_url(__DIR__) . 'css/common.css');
-		wp_enqueue_style('remodal', plugin_dir_url(__DIR__) . 'lib/remodal.css');
-		wp_enqueue_style('remodal-default-theme', plugin_dir_url(__DIR__) . 'lib/remodal-default-theme.css');
+		if(!$forceLoad && !$wpgmza->getCurrentPage())
+			return; // NB: Not forcing a load, and not on a map page.
+		
+		$version_string = $wpgmza->getBasicVersion();
+		if(method_exists($wpgmza, 'getProVersion')){
+			$version_string .= '+pro-' . $wpgmza->getProVersion();
+		}
+		
+		$base = plugin_dir_url(__DIR__);
+		
+		// wp_enqueue_style('wpgmza-common', $base . 'css/common.css', array(), $version_string);
+		wp_enqueue_style('wpgmza-common', $wpgmza->internalEngine->getStylesheet('common.css'), array(), $version_string);
+
+		$this->enqueueCustomCSS();
+		
+		wp_enqueue_style('remodal', $base . 'lib/remodal.css');
+		wp_enqueue_style('remodal-default-theme', $base . 'lib/remodal-default-theme.css');
+
+		if (empty($wpgmza->settings->wpgmza_do_not_enqueue_datatables) || is_admin()) {
+			wp_enqueue_style('datatables', $base . 'css/jquery.dataTables.min.css');
+		}
+		
+
+		if($wpgmza->internalEngine->isLegacy()){
+			$style = $wpgmza->settings->user_interface_style;
+	
+			switch($style){
+				case 'bare-bones':
+					break;
+				
+				case 'legacy':
+				case 'default':
+				case 'compact':
+				case 'minimal':
+					wp_enqueue_style("wpgmza-ui-$style", $base . "css/styles/$style.css", array(), $version_string);
+					break;
+					
+				case 'modern':
+					wp_enqueue_style("wpgmza-ui-legacy", $base . "css/styles/legacy.css", array(), $version_string);
+					wp_enqueue_style("wpgmza-ui-modern", $base . "css/styles/modern.css", array(), $version_string);
+					break;
+				
+				default:
+					wp_enqueue_style("wpgmza-ui-default", $base . "css/styles/default.css", array(), $version_string);
+					break;
+			}
+		} else if($wpgmza->internalEngine->isAtlasMajor()){
+			/* Atlas Major loads its own copy of components (allows independent changes) + its own CSS */
+			wp_enqueue_style("wpgmza-components", $base . "css/atlas-major/components.css", array(), $version_string);
+			wp_enqueue_style("wpgmza-atlas-major", $base . "css/atlas-major/atlas-major.css", array('wpgmza-components'), $version_string);
+		} else {
+			wp_enqueue_style("wpgmza-components", $base . "css/atlas-novus/components.css", array(), $version_string);
+			wp_enqueue_style("wpgmza-compat", $base . "css/atlas-novus/compat.css", array(), $version_string);
+		}
+			
+		// Admin stylesheets — Atlas Major is self-contained, skip the legacy/novus admin CSS
+		if(is_admin() && !empty($wpgmza->getCurrentPage()) && !$wpgmza->internalEngine->isAtlasMajor()){
+			wp_enqueue_style('wpgmza_admin', $wpgmza->internalEngine->getStylesheet('wp-google-maps-admin.css'), array(), $version_string);
+			wp_enqueue_style('editor-buttons');
+		}
+
+	    /* Developer Hook (Action) - Enqueue additional styles */     
+		do_action("wpgmza_script_loader_enqueue_styles");
+		
 	}
 	
 	/**
@@ -436,9 +544,8 @@ class ScriptLoader
 	public function getPluginScripts()
 	{
 		global $wpgmza;
-		
-		if($wpgmza->isUsingMinifiedScripts())
-		{
+
+		if(!$wpgmza->isInDeveloperMode() || !$this->canRecompile()){
 			$dir = ($this->proMode ? plugin_dir_path(WPGMZA_PRO_FILE) : plugin_dir_path(__DIR__));
 			
 			$combined = 'js/v8/wp-google-maps' . ($this->proMode ? '-pro' : '') . '.combined.js';
@@ -448,14 +555,19 @@ class ScriptLoader
 			
 			$minified_file_exists = file_exists($dir . $minified);
 			
-			if($minified_file_exists)
+			if($minified_file_exists){
 				$delta = filemtime($dir . $combined) - filemtime($dir . $minified);
+			}
 			
-			if(!$minified_file_exists || $delta > 0)
+			$deltaTolerance = 30;
+			if(!$minified_file_exists || $delta > $deltaTolerance){
 				$src = $combined;
-			
-			// TODO: Remove this, fix errors
-			// $src = $combined;
+			}
+
+			if(!$this->canRecompile()){
+				/* Current versions cannot recompile so we need to use minified only */
+				$src = $minified;
+			}
 			
 			$scripts = array('wpgmza' => 
 				(object)array(
@@ -473,13 +585,137 @@ class ScriptLoader
 		return $scripts;
 	}
 	
+	protected function enqueueLegacyProScripts()
+	{
+		global $wpgmza;
+		
+		switch($wpgmza->getCurrentPage())
+		{
+			case Plugin::PAGE_MAP_EDIT:
+				MapEditPage::enqueueLegacyScripts();
+			
+			default:
+				
+				$scriptArgs = apply_filters('wpgmza-get-scripts-arguments', array());
+				$dependencies = array_keys($this->getPluginScripts());
+				
+				wp_enqueue_script(
+					'wpgmza-legacy-pro-backward-compatibility', 
+					plugin_dir_url(WPGMZA_FILE) . 'js/legacy/legacy-pro-backward-compatibility.js',
+					$dependencies, false, $scriptArgs
+				);
+				
+				break;
+		}
+		
+		if(isset($_GET['action']))
+		{
+			$legacyDir = plugin_dir_path(WPGMZA_FILE) . 'includes/legacy/';
+			
+			switch($_GET['action'])
+			{
+				case "add_poly":
+					wpgmaps_b_admin_add_poly_javascript(intval($_GET['map_id']));
+					break;
+					
+				case "edit_poly":
+					wpgmaps_b_admin_edit_poly_javascript(intval($_GET['map_id']), intval($_GET['poly_id']));
+					break;
+					
+				case "add_polyline":
+					wpgmaps_b_admin_add_polyline_javascript(intval($_GET['map_id']));
+					break;
+				
+				case "edit_polyline":
+					wpgmaps_b_admin_edit_polyline_javascript(intval($_GET['map_id']), intval($_GET['poly_id']));
+					break;
+				
+				default:
+					break;
+			}
+		}
+	}
+	
 	/**
 	 * Enqueues all the libraries required by the plugin scripts, then enqueues the plugin scripts and localized data (JavaScript globals).
 	 * @return void
 	 */
-	public function enqueueScripts()
+	public function enqueueScripts($forceLoad=false)
 	{
 		global $wpgmza;
+		global $wpgmza_pro_version;
+		
+		// 7.11.69 backwards compat. loadScripts in 7.11.69 doesnt have a paramater and therefore this function forces forceLoad to false.
+		if(!empty($wpgmza_pro_version) && version_compare($wpgmza_pro_version, '7.11.69', '<=')) {
+			$forceLoad = true;
+		}		
+
+		if(!$forceLoad && !$wpgmza->getCurrentPage()) {
+			return; // NB: Not forcing a load, and not on a map page.
+		}
+
+		
+		
+		// Legacy Pro compatibility
+		if(!empty($wpgmza_pro_version) && 
+			version_compare($wpgmza_pro_version, '8.1.0', '<') &&
+			!empty($wpgmza->getCurrentPage()))
+		{
+			$this->enqueueLegacyProScripts();
+		}
+		
+		// Get library scripts
+		$libraries = $this->getLibraryScripts();
+
+		// Enqueue Google API call if necessary
+		switch($wpgmza->settings->engine)
+		{
+			case "open-layers":
+				$loader = new OLLoader(OLLoader::VERSION_TYPE_LEGACY);
+				$loader->loadOpenLayers($forceLoad);
+				break;
+			case "open-layers-latest":
+				$loader = new OLLoader();
+				$loader->loadOpenLayers($forceLoad);
+				break;
+			case "leaflet":
+			case "leaflet-azure":
+			case "leaflet-stadia":
+			case "leaflet-maptiler":
+			case "leaflet-locationiq":
+			case "leaflet-zerocost":
+				$loader = LeafletLoader::createInstance();
+				$loader->load($forceLoad);
+				break;
+			default:
+				$loader = ($wpgmza->isProVersion() ? new GoogleProMapsLoader() : new GoogleMapsLoader());
+				$loader->loadGoogleMaps($forceLoad);
+				break;
+		}
+
+		// Get script arguments via a filter so that Pro, Gold and VGM can all benefit from this approach */
+		$scriptArgs = apply_filters('wpgmza-get-scripts-arguments', array());
+
+		// Enqueue library scripts first
+		foreach($libraries as $handle => $src)
+		{
+			wp_enqueue_script($handle, $src, array('jquery'), false, $scriptArgs);
+		}
+		
+		// jQuery UI autosuggest?
+		if(class_exists('WPGMZA\\CloudAPI') && CloudAPI::isCloudKey($wpgmza->settings->wpgmza_google_maps_api_key))
+		{
+			wp_enqueue_script('jquery-ui-core');
+			wp_enqueue_script('jquery-ui-autocomplete');
+		}
+
+		// Legacy Pro compatibility
+		if(!empty($wpgmza_pro_version) && 
+			version_compare($wpgmza_pro_version, '8.1.0', '<') &&
+			!empty($wpgmza->getCurrentPage()))
+		{
+			$this->enqueueLegacyProScripts();
+		}
 		
 		// Get library scripts
 		$libraries = $this->getLibraryScripts();
@@ -487,21 +723,40 @@ class ScriptLoader
 		// Enqueue Google API call if necessary
 		switch($wpgmza->settings->engine)
 		{
-			case 'google-maps':
-				$loader = ($wpgmza->isProVersion() ? new GoogleProMapsLoader() : new GoogleMapsLoader());
-				$loader->loadGoogleMaps();
+			case "open-layers":
+				$loader = new OLLoader(OLLoader::VERSION_TYPE_LEGACY);
+				$loader->loadOpenLayers();
 				break;
-				
-			default:
+			case "open-layers-latest":
 				$loader = new OLLoader();
 				$loader->loadOpenLayers();
+				break;
+			case "leaflet":
+			case "leaflet-azure":
+			case "leaflet-stadia":
+			case "leaflet-maptiler":
+			case "leaflet-locationiq":
+			case "leaflet-zerocost":
+				$loader = LeafletLoader::createInstance();
+				$loader->load();
+				break;
+			default:
+				$loader = ($wpgmza->isProVersion() ? new GoogleProMapsLoader() : new GoogleMapsLoader());
+				$loader->loadGoogleMaps();
 				break;
 		}
 		
 		// Enqueue library scripts first
 		foreach($libraries as $handle => $src)
 		{
-			wp_enqueue_script($handle, $src, array('jquery'));
+			wp_enqueue_script($handle, $src, array('jquery'), false, $scriptArgs);
+		}
+		
+		// jQuery UI autosuggest?
+		if(class_exists('WPGMZA\\CloudAPI') && CloudAPI::isCloudKey($wpgmza->settings->wpgmza_google_maps_api_key))
+		{
+			wp_enqueue_script('jquery-ui-core');
+			wp_enqueue_script('jquery-ui-autocomplete');
 		}
 		
 		// FontAwesome?
@@ -513,14 +768,26 @@ class ScriptLoader
 				break;
 				
 			case '5.*':
-				wp_enqueue_style('fontawesome', 'https://use.fontawesome.com/releases/v5.0.9/css/all.css');
+				wp_enqueue_style('fontawesome', 'https://use.fontawesome.com/releases/v5.15.4/css/all.css');
+				wp_enqueue_style('fontawesome-polyfill', plugin_dir_url(__DIR__) . 'css/polyfill/fa-4to5.css');
 				
 				// If we're not in admin, break. If we are, continue and enqueue FA 4 which is used by the map edit page
 				if(!is_admin())
 					break;
 				
 			default:
+				/* Don't load in the post/page editor, for systems like Fusion/Avada */
+				if(is_admin()){
+					if(!empty($_GET['post']) && !empty($_GET['action'])){
+						if($_GET['action'] === 'edit'){
+							break;	
+						}
+					}
+				}
+
 				wp_enqueue_style('fontawesome', plugin_dir_url(__DIR__) . 'css/font-awesome.min.css');
+				wp_enqueue_style('fontawesome-polyfill', plugin_dir_url(__DIR__) . 'css/polyfill/fa-5to4.css');
+
 				break;
 		}
 		
@@ -532,39 +799,217 @@ class ScriptLoader
 		
 		// Sometimes we need to load the plugin JS files but not the maps API. The following code stops the API being loaded as a dependency of the plugin JS files when that is the case.
 		$apiLoader = new GoogleMapsAPILoader();
-		if($apiLoader->isIncludeAllowed())
+		if($apiLoader->isIncludeAllowed()){
 			$dependencies[] = 'wpgmza_api_call';
-		
+		}
+
+		/* Developer Hook (Filter) - Add or alter final core script dependencies */
+		$dependencies = apply_filters('wpgmza-get-core-script-dependencies', $dependencies);
+
 		$this->scripts['wpgmza']->dependencies = $dependencies;
-		
+
+
 		$version_string = $wpgmza->getBasicVersion();
 		if(method_exists($wpgmza, 'getProVersion'))
 			$version_string .= '+pro-' . $wpgmza->getProVersion();
 		
 		// Enqueue other scripts
-		foreach($this->scripts as $handle => $script)
-		{
+		foreach($this->scripts as $handle => $script){
+			// Skip scripts that require wpgmza_api_call when the Maps API is not being loaded (e.g. non-Google Maps engine)
+			if(!$apiLoader->isIncludeAllowed() && !empty($script->dependencies) && in_array('wpgmza_api_call', (array)$script->dependencies)){
+				continue;
+			}
 			$fullpath = plugin_dir_url(($script->pro ? WPGMZA_PRO_FILE : __DIR__)) . $script->src;
-			
-			wp_enqueue_script($handle, $fullpath, $script->dependencies, $version_string);
+			wp_enqueue_script($handle, $fullpath, $script->dependencies, $version_string, $scriptArgs);
+
 		}
+		
+		/* Atlas Major scripts */
+		if($wpgmza->internalEngine->isAtlasMajor()){
+			wp_enqueue_script('wpgmza-atlas-major-tabs', plugin_dir_url(__DIR__) . 'js/v8/atlas-major-tabs.js', array('jquery'), $version_string, $scriptArgs);
+			wp_enqueue_script('wpgmza-atlas-major-marker-list', plugin_dir_url(__DIR__) . 'js/v8/atlas-major-marker-list.js', array('jquery'), $version_string, $scriptArgs);
+			wp_enqueue_script('wpgmza-atlas-major-feature-list', plugin_dir_url(__DIR__) . 'js/v8/atlas-major-feature-list.js', array('jquery'), $version_string, $scriptArgs);
+			wp_enqueue_script('wpgmza-atlas-major-live-preview', plugin_dir_url(__DIR__) . 'js/v8/atlas-major-live-preview.js', array('jquery'), $version_string, $scriptArgs);
+		}
+
+	    /* Developer Hook (Action) - Enqueue additional scripts */
+		do_action('wpgmza_enqueue_scripts');
+
+	    /* Developer Hook (Action) - Enqueue additional scripts */
+		do_action('wpgmza_script_loader_enqueue_scripts');
 		
 		// Enqueue localized data
 		$this->enqueueLocalizedData();
+		
 		//$this->enqueueTourData();
-		//$this->enqueueCustomJavascript();
+		$this->enqueueCustomJS();
 	}
 	
 	/**
 	 * Enqueues the plugins localized data, as fetched from Plugin::getLocalizedData
 	 * @return void
 	 */
-	public function enqueueLocalizedData()
-	{
+	public function enqueueLocalizedData() {
 		global $wpgmza;
 		
-		$data = $wpgmza->getLocalizedData();
+		if(empty($this->localizedDataLoaded)){
+			$data = $wpgmza->getLocalizedData();
+			wp_localize_script('wpgmza', 'WPGMZA_localized_data', $data);
+			$this->localizedDataLoaded = true;
 
-		wp_localize_script('wpgmza', 'WPGMZA_localized_data', $data);
+	    	/* Developer Hook (Action) - Localize additional script variable */     
+			do_action('wpgmza_script_loader_localize_data_complete');
+		}
+
 	}
+
+	public function enqueueCustomJS() {
+		if (!is_admin() && empty($this->customJSLoaded)) {
+			global $wpgmza;
+			$globalSettings = get_option('wpgmza_global_settings');
+			if(empty($globalSettings))
+				return true;
+			
+			if(!($globalSettings = json_decode($globalSettings)))
+				return false;
+
+			if (!empty($globalSettings->wpgmza_custom_js)) {
+				wp_add_inline_script( 'wpgmza', stripslashes( $globalSettings->wpgmza_custom_js ) );
+				$this->customJSLoaded = true;
+			}
+
+	    	/* Developer Hook (Action) - Enqueue additional scripts, after user scripts */     
+			do_action("wpgmza_script_loader_enqueue_custom_js");
+		}
+	}
+
+
+	public function enqueueCustomCSS() {
+		if (!is_admin() && empty($this->customCSSLoaded)) {
+			global $wpgmza;
+			$globalSettings = get_option('wpgmza_global_settings');
+			if(empty($globalSettings))
+				return true;
+			
+			if(!($globalSettings = json_decode($globalSettings)))
+				return false;
+
+			if (!empty($globalSettings->wpgmza_custom_css)) {
+				wp_add_inline_style( 'wpgmza-common', wp_strip_all_tags( stripslashes( $globalSettings->wpgmza_custom_css ) ) );
+				$this->customCSSLoaded = true;
+			}
+
+	    	/* Developer Hook (Action) - Enqueue additional styles, after user styles */     
+			do_action("wpgmza_script_loader_enqueue_custom_css");
+		}
+	}
+
+
+	/**
+	 * Dequeues the datatables if the setting is enabled
+	 * @return array
+	 */
+	public function dequeueDataTablesScript($dep)
+	{
+		global $wpgmza;
+
+		if (!empty($wpgmza->settings->wpgmza_do_not_enqueue_datatables) && !is_admin()) {
+			$dequeue = array('datatables');
+			foreach($dequeue as $tag){
+				if (isset($dep[$tag])) {
+					unset($dep[$tag]);
+				}
+			}
+		}
+
+		return $dep;
+	}
+
+	/**
+	 *  Manually loads CodeMirror for use in the plugin
+	 * 
+	 * @return void
+	*/
+	public function enqueueCodeMirror(){
+		wp_enqueue_style('codemirror-theme', plugin_dir_url(__DIR__) . 'lib/codemirror-wpgmza.css');
+
+		/* We now use the default WP Core for code mirror dependencies */
+		wp_enqueue_style('wp-codemirror');
+		wp_enqueue_script('wp-codemirror');
+
+	    /* Developer Hook (Action) - Enqueue additional scripts, after code mirror */     
+		do_action("wpgmza_script_loader_enqueue_codemirror");
+	}
+
+	/**
+	 * Load writersblock 
+	 * 
+	 * @return void
+	*/
+	public function enqueueWritersblock(){
+		wp_enqueue_media();
+
+		$scriptArgs = apply_filters('wpgmza-get-scripts-arguments', array());
+		
+		wp_enqueue_style('wpgmza-writersblock', plugin_dir_url(__DIR__) . 'lib/writersblock/css/writersblock.css');
+		wp_enqueue_script('wpgmza-writersblock', plugin_dir_url(__DIR__) . 'lib/writersblock/js/writersblock.js', false, false, $scriptArgs);
+
+	    /* Developer Hook (Action) - Enqueue additional scripts, after writersblock */     
+		do_action("wpgmza_script_loader_enqueue_writersblock");
+	}
+
+	/**
+	 * Get script enqueue arguments, which we might need for special loading approaches, 
+	 * like defer loading
+	 * 
+	 * @return array
+	 */
+	public function getScriptArguments(){
+		global $wpgmza;
+
+		$scriptArguments = array();
+		if(!empty($wpgmza->settings->enable_defer_loading)){
+			$scriptArguments['strategy'] = 'defer';
+		}
+
+		/* Developer Hook (Filter) - Add or alter script arguments */
+		return apply_filters('wpgmza-modify-scripts-arguments', $scriptArguments);
+	}
+
+	/**
+	 * A quick check to determine the system can recompile scripts with the current installation setup 
+	 * 
+	 * This checks if the major versions installed on the users site mismatch in any way, if they do, we will not allow recompiling
+	 * 
+	 * This allows us to prefer minified files, in events where a recompile would usually occur
+	 * 
+	 * This DOES NOT validate developer mode, that should still be done separately if needed
+	 * 
+	 * @return bool
+	 */
+	public function canRecompile(){
+		global $wpgmza;
+		if(!empty($wpgmza) && method_exists($wpgmza, 'isProVersion') && $wpgmza->isProVersion()){
+			/* This installation includes a pro version - We need to check the major version number */
+			if(method_exists($wpgmza, 'getProVersion')){ 
+				$basicVersion = $wpgmza->getBasicVersion();
+				$proVersion = $wpgmza->getProVersion();
+
+				if(!empty($basicVersion) && !empty($proVersion)){
+					$basicVersion = explode('.', $basicVersion);
+					$proVersion = explode('.', $proVersion);
+					if(!empty($basicVersion) && !empty($proVersion)){
+						$basicVersion = array_shift($basicVersion);
+						$proVersion = array_shift($proVersion);
+						if(intval($basicVersion) !== intval($proVersion)){
+							/* Our basic and Pro major versions do not match and we should never recompile */
+							return false;
+						}
+					}
+				}
+			}
+		}
+		/* Basic only, or basic and pro match major versions, we can proceed */
+		return true;
+	}	
 }

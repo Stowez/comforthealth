@@ -289,9 +289,7 @@ class GF_Results_Cache {
 
 		$key = '%' . GFCommon::esc_like( $key ) . '%';
 
-		$sql = $wpdb->prepare( "SELECT count(option_id) FROM $wpdb->options WHERE option_name LIKE %s", $key );
-
-		$result = $wpdb->get_var( $sql );
+		$result = $wpdb->get_var( $wpdb->prepare( "SELECT count(option_id) FROM $wpdb->options WHERE option_name LIKE %s", $key ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		return $result > 0;
 
@@ -318,9 +316,7 @@ class GF_Results_Cache {
 
 		$key = '%' . GFCommon::esc_like( $key ) . '%';
 
-		$sql = $wpdb->prepare( "DELETE FROM $wpdb->options WHERE option_name LIKE %s", $key );
-
-		$result = $wpdb->query( $sql );
+		$result = $wpdb->query( $wpdb->prepare( "DELETE FROM $wpdb->options WHERE option_name LIKE %s", $key ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 
 		return $result;
 	}
@@ -566,11 +562,11 @@ class GF_Results_Cache {
 	 * @param $form
 	 * @param array $search_criteria
 	 * @param array $state_array
-	 * @param $args
+	 * @param array $args
 	 *
 	 * @return array|mixed
 	 */
-	public function calculate( $form, $search_criteria = array(), $state_array = array(), $args ) {
+	public function calculate( $form, $search_criteria = array(), $state_array = array(), $args = array() ) {
 
 		$args = wp_parse_args( $args, $this->get_default_args() );
 

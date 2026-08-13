@@ -1,7 +1,12 @@
-<div class="notice notice-warning wpgmza-open-layers-feature-unavailable" style="display: none;">
+<?php
+
+if(!defined('ABSPATH'))
+	return;
+
+?><div class="notice notice-warning wpgmza-open-layers-feature-unavailable" style="display: none;">
 	<p>
 		<?php
-		_e('This feature is not available when using the OpenLayers engine. Please go to settings then select and configure Google Maps to enable this feature.', 'wp-google-maps');
+		_e('Not available while using the OpenLayers engine.', 'wp-google-maps');
 		?>
 	</p>
 </div>

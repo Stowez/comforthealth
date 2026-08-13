@@ -2,14 +2,18 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 /**
  * This module loads the Google Maps API unconditionally (as opposed to the GoogleMapsAPILoader)
- * @deprecated This functionality will be merged into one class with GoogleMapsAPILoader
+ * @ deprecated This functionality will be merged into one class with GoogleMapsAPILoader
  * @see GoogleMapsAPILoader
  */
 class GoogleMapsLoader
 {
 	private static $googleAPILoadCalled = false;
+	const TEMPORARY_API_KEY	= "QUl6YVN5RG9fZkc3RFhCT1Z2ZGhsckxhLVBIUkV1RkRwVGtsV2hZ";
 	
 	/**
 	 * This will be handled by the Factory class
@@ -38,19 +42,24 @@ class GoogleMapsLoader
 		global $wpgmza;
 		
 		// Locale
-		$locale = get_locale();
+		$locale = (!empty($wpgmza->settings->locale_override) && $wpgmza->settings->locale_override !== 'site-default') ? $wpgmza->settings->locale_override : get_locale();
 		$suffix = '.com';
-		
-		switch($locale)
-		{
+		$region = false;
+
+		$localeOverride = false;
+		switch($locale){
 			case 'he_IL':
 				// Hebrew correction
 				$locale = 'iw';
 				break;
-			
 			case 'zh_CN':
 				// Chinese integration
-				$suffix = '.cn';
+				$region = 'CN';
+				break;
+			case 'zh_TW':
+				// Traditional Chinese
+				$region = 'TW';
+				$localeOverride = 'zh-TW';
 				break;
 		}
 		
@@ -60,12 +69,22 @@ class GoogleMapsLoader
 		// Default params for google maps
 		$params = array(
 			'v' 		=> 'quarterly',
-			'language'	=> $locale,
+			'language'	=> !empty($localeOverride) ? $localeOverride : $locale,
 			'suffix'	=> $suffix
 		);
+
+		if(!empty($region)){
+			/* Google now requires that we load region over the .com suffix, but with a region query */
+			$params['region'] = $region;
+		}
 		
 		// Libraries
-		$libraries = array('geometry', 'places', 'visualization');
+		$libraries = array('geometry', 'places', 'visualization', 'marker');
+		
+		// if($wpgmza->getCurrentPage() == Plugin::PAGE_MAP_EDIT){
+		// 	$libraries[] = 'drawing';
+		// }
+		
 		$params['libraries'] = implode(',', $libraries);
 		
 		// API Version
@@ -96,7 +115,17 @@ class GoogleMapsLoader
 		$key = get_option('wpgmza_google_maps_api_key');
 		if(!empty($key))
 			$params['key'] = $key;
+		else if(is_admin())
+			$params['key'] = base64_decode(GoogleMapsLoader::TEMPORARY_API_KEY);
 
+		// Callback, required as of 2023
+		$params['callback'] = "__wpgmzaMapEngineLoadedCallback";
+
+		if(!empty($wpgmza->settings->enable_google_api_async_param)){
+			$params['loading'] = 'async';
+		}
+
+		/* Developer Hook (Filter) - Modify Googl Maps API params (URL) */
 		$params = apply_filters( 'wpgmza_google_maps_api_params', $params );
 		
 		return $params;
@@ -106,11 +135,11 @@ class GoogleMapsLoader
 	 * This function loads the Google API if it hasn't been called already
 	 * @return void
 	 */
-	public function loadGoogleMaps()
+	public function loadGoogleMaps($forceLoad = false)
 	{
 		global $wpgmza;
 		
-		if(GoogleMapsLoader::$googleAPILoadCalled)
+		if(GoogleMapsLoader::$googleAPILoadCalled && empty($forceLoad))
 			return;
 		
 		$apiLoader = new GoogleMapsAPILoader();
@@ -123,12 +152,15 @@ class GoogleMapsLoader
 		unset($params['suffix']);
 		
 		$url = '//maps.google' . $suffix . '/maps/api/js?' . http_build_query($params);
+
+		$scriptArgs = apply_filters('wpgmza-get-scripts-arguments', array());
 		
-		wp_enqueue_script('wpgmza_api_call', $url);
+		wp_enqueue_script('wpgmza_api_call', $url, false, false, $scriptArgs);
 		
 		GoogleMapsLoader::$googleAPILoadCalled = true;
-		
-		add_filter('script_loader_tag', array($this, 'preventOtherGoogleMapsTag'), 9999999, 3);
+		if(!empty($wpgmza->settings) && !empty($wpgmza->settings->wpgmza_prevent_other_plugins_and_theme_loading_api)){
+			add_filter('script_loader_tag', array($this, 'preventOtherGoogleMapsTag'), 9999999, 3);
+		}
 	}
 	
 	/**
@@ -151,4 +183,3 @@ class GoogleMapsLoader
 	}
 	
 }
-

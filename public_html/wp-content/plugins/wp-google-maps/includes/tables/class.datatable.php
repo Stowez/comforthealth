@@ -2,18 +2,41 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 class DataTable extends AjaxTable
 {
 	public function __construct($table_name, $ajax_parameters=null, $datatable_options=null)
 	{
+		global $wpgmza;
+		
 		AjaxTable::__construct($table_name, '/datatables/', $ajax_parameters);
 		
 		$this->element->setAttribute('data-wpgmza-datatable', 'true');
+
+		if($wpgmza->isProVersion()){
+			$this->element->setAttribute('data-wpgmza-pro-datatable', 'true');
+		}
 		
 		if($datatable_options)
 			$this->setDataTableOptions($datatable_options);
 		
+		if(!$wpgmza->isProVersion() || version_compare($wpgmza->getProVersion(), '8.1.0', '>='))
+			$this->element->setAttribute('data-wpgmza-feature-type', $this->getFeatureType());
+		
 		$this->initTableDOM();
+	}
+	
+	protected function getFeatureType()
+	{
+		$class	= get_called_class();
+		$regex	= "/WPGMZA\\\\(Pro)?(Admin)?(.+?)DataTable$/";
+		
+		if(!preg_match($regex, $class, $m))
+			throw new \Exception("Failed to match feature type in $class");
+		
+		return strtolower($m[3]);
 	}
 	
 	protected function getColumns()
@@ -28,7 +51,8 @@ class DataTable extends AjaxTable
 		if(!empty($orderBy))
 			return $orderBy;
 		
-		return "{$this->table_name}.id";
+		// return "{$this->table_name}.id";
+		return "id";
 	}
 	
 	protected function getOrderDirection($input_params)
@@ -55,7 +79,10 @@ class DataTable extends AjaxTable
 	{
 		$result = AjaxTable::data($input_params);
 		
-		$result->draw = $input_params['draw'];
+		if(isset($input_params['draw']))
+			$result->draw = $input_params['draw'];
+		else
+			$result->draw = (isset($_SERVER['HTTP_X_DATATABLES_DRAW']) ? (int)$_SERVER['HTTP_X_DATATABLES_DRAW'] : 0);
 		
 		return $result;
 	}
@@ -80,10 +107,11 @@ class DataTable extends AjaxTable
 		{
 			$th = $this->document->createElement('th');
 			$th->setAttribute('data-wpgmza-column-name', $name);
+			$th->setAttribute('id', "wpgmza_map_list_".$name);
 			$th->appendText($caption);
 			
 			$thead->appendChild($th);
-			$tfoot->appendChild($th->cloneNode(true));
+			// $tfoot->appendChild($th->cloneNode(true));
 		}
 	}
 	

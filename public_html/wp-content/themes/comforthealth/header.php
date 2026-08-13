@@ -1,3 +1,14 @@
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-JP91E6ZN70">
+</script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-JP91E6ZN70');
+</script>
+
 <?php
  if( isset($_REQUEST['play']) ) {
 	if($_COOKIE['played'] !== 1){
@@ -20,29 +31,28 @@
 	<link rel="icon" type="image/png" href="<?bloginfo('template_url');?>/fav.png" />
 	<?/*
 */?>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-7H7ZZKGHK9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-7H7ZZKGHK9');
+</script>
+
+
 	<?php wp_head(); ?>
 </head>
 
 <body <?php body_class(); ?>>
-<script>
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
 
-  ga('create', 'UA-69294137-2', 'auto', {'allowLinker': true});
-  ga('require', 'linker');
-  ga('linker:autoLink', ['comfort-health.cliniko.com'], true );
-  ga('send', 'pageview');
-
-</script>
-<nav class="navigation <?= is_page('home') ? 'noscroll' : '';?>">
+<nav class="navigation">
 	<div class="container">
 		<div class="flexWrap">
 			<?if (is_front_page() || is_page('home')) :?>
-				<h1 class="headerLogo"><a href="/" >
+				<span class="headerLogo"><a href="/" >
 					Comfort Health - Clifton
-				</a></h1>
+				</a></span>
 			<?else :?>
 				<a href="/" class="headerLogo">
 					Comfort Health - Clifton

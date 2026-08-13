@@ -1,6 +1,6 @@
 // TODO: Move this file into /js and out of /includes which is for PHP
 jQuery(function($){
-	jQuery(window).on("load", function(){
+	jQuery(document).ready(function(){
 		if(typeof wpgmza_backwards_compat_v6_marker_tab_headings !== "undefined"){
 			$("#wpgmaps_tabs_markers > ul").append(wpgmza_backwards_compat_v6_marker_tab_headings);
 			$("#wpgmaps_tabs_markers").append(wpgmza_backwards_compat_v6_marker_tab_content);
@@ -43,7 +43,17 @@ jQuery(function($){
 	}
 
 	function add_rectangle(mapid, data)	{
-		data.map = MYMAP.map.googleMap;
+		
+		var map;
+
+		if(MYMAP.map)
+			map = MYMAP.map;
+		else if(MYMAP[mapid].map instanceof google.maps.Map)
+			map = MYMAP[mapid].map;
+		else if(MYMAP[mapid].map instanceof WPGMZA.Map)
+			map = MYMAP[mapid].googleMap;
+
+		data.map = map;
 		
 		data.fillColor = data.color;
 		data.fillOpacity = parseFloat(data.opacity);

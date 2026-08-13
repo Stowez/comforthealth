@@ -9,8 +9,50 @@ class GF_Field_Post_Title extends GF_Field {
 
 	public $type = 'post_title';
 
+	/**
+	 * Whether there can be more than one of this field type per form.
+	 *
+	 * @since 3.0
+	 *
+	 * @var bool
+	 */
+	public $duplicatable = false;
+
+	/**
+	 * Whether the field can be used in a repeater.
+	 *
+	 * @since 3.0
+	 *
+	 * @var bool
+	 */
+	public $repeatable = false;
+
 	public function get_form_editor_field_title() {
 		return esc_attr__( 'Title', 'gravityforms' );
+	}
+
+	/**
+	 * Returns the field's form editor description.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function get_form_editor_field_description() {
+		return esc_attr__( 'Allows users to submit the title for a post.', 'gravityforms' );
+	}
+
+	/**
+	 * Returns the field's form editor icon.
+	 *
+	 * This could be an icon url or a gform-icon class.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function get_form_editor_field_icon() {
+		return 'gform-icon--title';
 	}
 
 	function get_form_editor_field_settings() {
@@ -85,7 +127,10 @@ class GF_Field_Post_Title extends GF_Field {
 	 * @return string
 	 */
 	public function sanitize_entry_value( $value, $form_id ) {
-		return wp_strip_all_tags( $value );
+
+		$sanitized = wp_strip_all_tags( $value );
+		$this->post_entry_value_sanitization( $value, $sanitized, 'wp_strip_all_tags' );
+		return $sanitized;
 	}
 
 	// # FIELD FILTER UI HELPERS ---------------------------------------------------------------------------------------

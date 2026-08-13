@@ -20,7 +20,7 @@ get_header();
 									<?if($catCount > 7):
 										break;
 									endif;?>
-									<a href="#<?= $cat->slug; ?>" class="cat-tags"><?= $cat->name; ?></a>
+									<?/*<a href="#<?= $cat->slug; ?>" class="cat-tags"><?= $cat->name; ?></a>*/?>
 									<?$catCount++;?>
 								<?endforeach;?>
 								</nav>

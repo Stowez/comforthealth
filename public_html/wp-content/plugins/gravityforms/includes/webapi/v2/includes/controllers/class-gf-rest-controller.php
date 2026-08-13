@@ -204,9 +204,10 @@ abstract class GF_REST_Controller extends WP_REST_Controller {
 
 				$entry[ $field->id ] = $field->to_array( $entry[ $field->id ] );
 
-			} elseif ( $field instanceof GF_Field_FileUpload && $field->multipleFiles ) {
+			} elseif ( $field instanceof GF_Field_FileUpload ) {
+				$files = $field->to_array( $entry[ $field->id ] );
 
-				$entry[ $field->id ] = json_decode( $entry[ $field->id ] );
+				$entry[ $field->id ] = $field->multipleFiles ? $files : rgar( $files, 0 );
 
 			} elseif ( $field instanceof GF_Field_List ) {
 
@@ -236,7 +237,7 @@ abstract class GF_REST_Controller extends WP_REST_Controller {
 			return true;
 		}
 
-		if ( $input_type == 'fileupload' && $field->multipleFiles ) {
+		if ( $field->storageType === 'json' || ( $input_type === 'fileupload' && $field->multipleFiles ) ) {
 			return true;
 		}
 
@@ -294,16 +295,9 @@ abstract class GF_REST_Controller extends WP_REST_Controller {
 				continue;
 			}
 
-			if ( $field->get_input_type() === 'fileupload' && $field->multipleFiles ) {
-
-				$entry[ $field->id ] = json_encode( $entry[ $field->id ] );
-
-			} elseif ( $field instanceof GF_Field_MultiSelect ) {
-
+			if ( $field instanceof GF_Field_FileUpload || $field instanceof GF_Field_MultiSelect ) {
 				$entry[ $field->id ] = $field->to_string( $entry[ $field->id ] );
-
 			}
-
 		}
 
 		return $entry;
@@ -377,6 +371,60 @@ abstract class GF_REST_Controller extends WP_REST_Controller {
 		}
 
 		return $result;
+	}
+
+	/**
+	 * Recursively patches the given item with the supplied changes (deletions, updates, and additions).
+	 *
+	 * @since 2.4.24
+	 *
+	 * @param mixed $current The existing item to be modified (e.g. feed).
+	 * @param mixed $changes The changes to be applied.
+	 *
+	 * @return mixed
+	 */
+	public function patch_array_recursive( $current, $changes ) {
+		if ( ! $this->is_assoc_array( $changes ) ) {
+			return $changes;
+		}
+
+		if ( ! $this->is_assoc_array( $current ) ) {
+			$current = array();
+		}
+
+		foreach ( $changes as $key => $value ) {
+			if ( is_null( $value ) ) {
+				unset( $current[ $key ] );
+				continue;
+			}
+
+			$current[ $key ] = $this->patch_array_recursive( rgar( $current, $key ), $value );
+		}
+
+		return $current;
+	}
+
+	/**
+	 * Determines if the passed variable is an associative array.
+	 *
+	 * @since 2.4.24
+	 *
+	 * @param mixed $array The variable to be checked.
+	 *
+	 * @return bool
+	 */
+	private function is_assoc_array( $array ) {
+		if ( ! is_array( $array ) ) {
+			return false;
+		}
+
+		foreach ( array_keys( $array ) as $key ) {
+			if ( $key !== (int) $key ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 }

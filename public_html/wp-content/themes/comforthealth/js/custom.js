@@ -1,6 +1,6 @@
 // A $( document ).ready() block.
 $( document ).ready(function() {
-
+console.log('test');
 	didScroll = false;
 
 	$(window).scroll(function() {
@@ -37,6 +37,7 @@ $( document ).ready(function() {
 	 $('.masonry').matchHeight();
 
 	 $('#navicon').on('click', function(e) {
+			console.log('here');
 	 	e.preventDefault();
 	 	$('#menu-main').toggleClass('open');
 	 	$(this).toggleClass('open');

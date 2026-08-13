@@ -2,6 +2,9 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 class Table extends Factory
 {
 	private $_table_name;
@@ -14,7 +17,7 @@ class Table extends Factory
 			throw new \Exception('Invalid table name');
 		
 		$this->_table_name = $table_name;
-		
+
 		$this->_document = new DOMDocument();
 		$this->loadDocument();
 		$this->_element = $this->getElement();

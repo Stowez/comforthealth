@@ -1,4 +1,25 @@
-<div id="wpgmza-gdpr-compliance">
+<?php
+
+// DEPRECATED: Now built into the settings page
+
+if(!defined('ABSPATH'))
+	return;
+
+?><div id="wpgmza-gdpr-compliance">
+	
+	<div>
+		<h3><?php _e( 'GDPR Compliance', 'wp-google-maps' ); ?></h3>
+		<p>
+			<?php
+			_e('Our GDPR notice will be displayed whenever the agreement cookie is not set. Agreeing to the notice will set this cookie.', 'wp-google-maps');
+			?>
+		</p>
+		<p>
+			<?php
+			_e('Some caching and optimization plugins will continue to serve your map page with the GDPR agreement, disregarding this cookie. In this instance, clicking "I Agree" will reload the page and appear to have no effect. To solve this issue, we recommend you exclude your map page from caching and optimization.', 'wp-google-maps');
+			?>
+		</p>
+	</div>
 	
 	<div id="wpgmza-gpdr-general-compliance">
 	
@@ -7,12 +28,13 @@
 		</h2>
 		
 		<fieldset>
+		
 			<label for="wpgmza_gdpr_require_consent_before_load">
 				<?php
 				_e('Require consent before loading Maps API', 'wp-google-maps');
 				?>
 				<i class="fa fa-question-circle" 
-					title="<?php _e('The GDPR views IP Addresses as Personal Data, which requires consent before being processed. Loading the Google Maps API stores some user information, such as IP Addresses. WP Google Maps endeavours to uphold the spirit of data protection as per the GDPR. Enable this to option to prevent the Maps API from loading, until a user has consented to it.', 'wp-google-maps'); ?>"/>
+					title="<?php _e('The GDPR views IP Addresses as Personal Data, which requires consent before being processed. Loading the Google Maps API stores some user information, such as IP Addresses. WP Go Maps endeavours to uphold the spirit of data protection as per the GDPR. Enable this to option to prevent the Maps API from loading, until a user has consented to it.', 'wp-google-maps'); ?>"/>
 			</label>
 			<input name="wpgmza_gdpr_require_consent_before_load" type="checkbox"/>
 		</fieldset>
@@ -95,7 +117,7 @@
 	
 	<p>
 		<?php
-		_e('For more information about WPGM and GDPR compliance, please refer to our <a href="https://www.wpgmaps.com/gdpr/">GDPR information page</a> and our <a href="https://www.wpgmaps.com/privacy-policy/">Privacy Policy</a>', 'wp-google-maps');
+		_e('For more information about WPGM and GDPR compliance, please refer to our <a href="https://www.wpgmaps.com/gdpr/?utm_source=plugin&amp;utm_medium=link&amp;utm_campaign=gdpr-settings-legacy-v10">GDPR information page</a> and our <a href="https://www.wpgmaps.com/privacy-policy/?utm_source=plugin&amp;utm_medium=link&amp;utm_campaign=gdpr-settings-privacy-legacy-v10">Privacy Policy</a>', 'wp-google-maps');
 		?>
 	</p>
 </div>

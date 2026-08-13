@@ -1,4 +1,9 @@
-<tr data-required-map-engine="open-layers">
+<?php
+
+if(!defined('ABSPATH'))
+	return;
+
+?><tr data-required-map-engine="open-layers">
 	<td><?php _e('Tile Server URL:', 'wp-google-maps'); ?></td>
 	<td id="tile_server_controls">
 	
@@ -28,7 +33,7 @@
 				?>
 			</option>
 			
-			<option value="http://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
+			<option value="https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png"
 				data-preview-image="https://wiki.openstreetmap.org/w/images/6/63/Humanitarian_style.png">
 				<?php
 				_e('Humanitarian', 'wp-google-maps');

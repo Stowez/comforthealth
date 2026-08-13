@@ -6,13 +6,16 @@
 
 namespace WPGMZA\Selector;
 
+if(!defined('ABSPATH'))
+	return;
+
 /**
  * Useful when debugging CSS selector to XPath query conversion
  * @param string $str The string to output
  */
 function trace($str)
 {
-	echo $str . "\r\n";
+	echo esc_html($str) . "\r\n";
 }
 
 /**
@@ -31,7 +34,7 @@ class ParseException extends \Exception
 	 * @param int $code Unused, the error code
 	 * @param \Exception $previous The previous exception, used for exception chaining
 	 */
-	public function __construct($message, $code = 0, \Exception $previous = null) {
+	public function __construct($message, $code = 0, ?\Exception $previous = null) {
         \Exception::__construct($message, $code, $previous);
     }
 }
@@ -47,7 +50,7 @@ class ConvertException extends \Exception
 	 * @param int $code Unused, the error code
 	 * @param \Exception $previous The previous exception, used for exception chaining
 	 */
-	public function __construct($message, $code = 0, Exception $previous = null) {
+	public function __construct($message, $code = 0, ?\Exception $previous = null) {
         \Exception::__construct($message, $code, $previous);
     }
 }
@@ -765,7 +768,7 @@ class Selector
 			{
 				case Token::ID_SHORTHAND:
 					if($this->id != null)
-						throw new ParseExcepton('Selector can only have one ID');
+						throw new \ParseExcepton('Selector can only have one ID');
 					$stream->read(Token::ID_SHORTHAND);
 					$this->id = $stream->read(Token::IDENTIFIER)->string;
 					//trace("Read ID as {$this->id}");
@@ -891,7 +894,10 @@ class XPathConverter
 	protected function convertAttribute($attr)
 	{
 		$name = $attr->name;
-		$value = addslashes($attr->value);
+		if(is_null($attr->value)){
+			$attr->value = '';
+		}
+		$value = @addslashes($attr->value);
 		
 		switch($attr->operator)
 		{

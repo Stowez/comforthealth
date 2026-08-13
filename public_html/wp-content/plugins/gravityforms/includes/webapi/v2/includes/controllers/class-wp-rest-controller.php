@@ -41,7 +41,7 @@ abstract class WP_REST_Controller {
 	 *
 	 */
 	public function register_routes() {
-		_doing_it_wrong( 'WP_REST_Controller::register_routes', __( 'The register_routes() method must be overriden' ), 'WPAPI-2.0' );
+		_doing_it_wrong( 'WP_REST_Controller::register_routes', esc_html__( 'The register_routes() method must be overriden', 'gravityforms' ), 'WPAPI-2.0' );
 	}
 
 	/**
@@ -655,7 +655,7 @@ if ( ! function_exists( 'rest_sanitize_request_arg' ) ) {
 
 		if ( isset( $args['format'] ) ) {
 			switch ( $args['format'] ) {
-				case 'date-time' :
+				case 'string' :
 					return sanitize_text_field( $value );
 
 				case 'email' :

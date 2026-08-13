@@ -59,10 +59,10 @@ class GF_REST_Authentication {
 	public function init() {
 
 		add_filter( 'determine_current_user', array( $this, 'authenticate' ), 15 );
-		add_filter( 'rest_authentication_errors', array( $this, 'check_authentication_error' ) );
+		add_filter( 'rest_authentication_errors', array( $this, 'authentication_fallback' ) );
+		add_filter( 'rest_authentication_errors', array( $this, 'check_authentication_error' ), 99 );
+		add_filter( 'rest_pre_dispatch', array( $this, 'check_user_permissions' ), 99, 3 );
 		add_filter( 'rest_post_dispatch', array( $this, 'send_unauthorized_headers' ), 50 );
-		add_filter( 'rest_pre_dispatch', array( $this, 'check_user_permissions' ), 10, 3 );
-		add_filter( 'rest_authentication_errors', array( $this, 'override_rest_authentication_errors' ), 15 );
 
 	}
 
@@ -72,11 +72,14 @@ class GF_REST_Authentication {
 	 *
 	 * @since 2.4-beta-1
 	 *
+	 * @deprecated 2.4.22
+	 *
 	 * @param $errors
 	 *
 	 * @return null
 	 */
 	public function override_rest_authentication_errors( $errors ) {
+		_deprecated_function( __METHOD__, '2.4.22', 'GF_REST_Authentication::check_authentication_error' );
 
 		if ( $this->is_request_to_rest_api() && ! $this->get_error() ) {
 			return null;
@@ -94,17 +97,17 @@ class GF_REST_Authentication {
 	 * @return bool Returns true if this is a request to the Gravity Forms REST API. False otherwise
 	 */
 	protected function is_request_to_rest_api() {
-		if ( empty( $_SERVER['REQUEST_URI'] ) ) {
+		if ( empty( $_SERVER['REQUEST_URI'] ) || ! ( defined( 'REST_REQUEST' ) && REST_REQUEST ) ) {
 			return false;
 		}
 
 		$rest_prefix = trailingslashit( rest_get_url_prefix() );
 
 		// Check if our endpoint.
-		$is_gf_endpoint = ( strpos( $_SERVER['REQUEST_URI'], $rest_prefix . 'gf/' ) !== false );
+		$is_gf_endpoint = ( strpos( $_SERVER['REQUEST_URI'], $rest_prefix . 'gf/' ) !== false ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		// Allow third party plugins use our authentication methods.
-		$third_party = ( false !== strpos( $_SERVER['REQUEST_URI'], $rest_prefix . 'gf-' ) );
+		$third_party = ( false !== strpos( $_SERVER['REQUEST_URI'], $rest_prefix . 'gf-' ) );  // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 
 		if ( has_filter( 'gform_is_request_to_rest_api' ) ) {
 			$this->log_debug( __METHOD__ . '(): Executing functions hooked to gform_is_request_to_rest_api.' );
@@ -127,20 +130,26 @@ class GF_REST_Authentication {
 	 * @return int|false Returns the User ID of the authenticated user.
 	 */
 	public function authenticate( $user_id ) {
-
-		$this->clear_errors();
-
-		// Do not authenticate twice and check if is a request to our endpoint in the WP REST API.
-		if ( ! empty( $user_id ) || ! $this->is_request_to_rest_api() ) {
+		if ( ! $this->is_request_to_rest_api() ) {
 			return $user_id;
 		}
 
+		if ( ! empty( $user_id ) ) {
+			$this->log_debug( __METHOD__ . sprintf( '(): User #%d already authenticated.', $user_id ) );
+
+			return $user_id;
+		}
+
+		$this->clear_errors();
 		$this->log_debug( __METHOD__ . '(): Running.' );
 
 		if ( is_ssl() ) {
 			$user_id = $this->perform_basic_authentication();
+			if ( $user_id ) {
+				return $user_id;
+			}
 
-			// If basic authentication fails, allow oauth to be performed.
+			$user_id = $this->perform_application_password_authentication();
 			if ( $user_id ) {
 				return $user_id;
 			}
@@ -150,20 +159,60 @@ class GF_REST_Authentication {
 	}
 
 	/**
+	 * Authenticate the user if authentication wasn't performed during the determine_current_user action.
+	 *
+	 * Necessary in cases where wp_get_current_user() is called before Gravity Forms is loaded.
+	 *
+	 * @since 2.4.22
+	 *
+	 * @param WP_Error|null|bool $error Error data.
+	 *
+	 * @return WP_Error|null|bool
+	 */
+	public function authentication_fallback( $error ) {
+		if ( ! empty( $error ) ) {
+			// Another plugin has already declared a failure.
+			return $error;
+		}
+
+		if ( empty( $this->error ) && empty( $this->auth_method ) && empty( $this->user ) && 0 === get_current_user_id() ) {
+			// Authentication hasn't occurred during `determine_current_user`, so check auth.
+			$user_id = $this->authenticate( false );
+			if ( $user_id ) {
+				wp_set_current_user( $user_id ); // phpcs:ignore Generic.PHP.ForbiddenFunctions.Discouraged
+
+				return true;
+			}
+		}
+
+		return $error;
+	}
+
+	/**
 	 * Check for authentication error.
 	 *
 	 * @since 2.4-beta-1
 	 *
 	 * @param WP_Error|null|bool $error Error data.
+	 *
 	 * @return WP_Error|null|bool
 	 */
 	public function check_authentication_error( $error ) {
-		// Pass through other errors.
-		if ( ! empty( $error ) ) {
+		if ( ! $this->is_request_to_rest_api() || $_SERVER['REQUEST_METHOD'] === 'OPTIONS' ) {  // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotValidated
+			// Pass through OPTIONS requests or those to non-GF endpoints.
 			return $error;
 		}
 
-		return $this->get_error();
+		$error = $this->get_error();
+		if ( empty( $error ) ) {
+			// rest_handle_options_request() will be called by $this->check_user_permissions().
+			remove_filter( 'rest_pre_dispatch', 'rest_handle_options_request' );
+
+			// Indicate auth succeeded.
+			return true;
+		}
+
+		return $error;
 	}
 
 	/**
@@ -179,7 +228,7 @@ class GF_REST_Authentication {
 
 		$this->error = $error;
 
-		$this->log_error( __METHOD__ . '(): ' . print_r( $error, true ) );
+		$this->log_error( __METHOD__ . '(): ' . json_encode( $error ) );
 	}
 
 	/***
@@ -207,6 +256,54 @@ class GF_REST_Authentication {
 	}
 
 	/**
+	 * Sets the user property for the authenticated user and clears the error property.
+	 *
+	 * @since 2.4.22
+	 *
+	 * @param object $user An object containing the user id and some other optional properties.
+	 *
+	 * @return int The ID of the authenticated user.
+	 */
+	protected function set_user( $user ) {
+		$this->user  = $user;
+		$this->error = null;
+
+		return $this->user->user_id;
+	}
+
+	/**
+	 * Attempts to authenticate the request using the application password feature introduced in WordPress 5.6.
+	 *
+	 * @since 2.4.22
+	 *
+	 * @return false|int False or the ID of the authenticated user.
+	 */
+	private function perform_application_password_authentication() {
+		if ( ! function_exists( 'wp_validate_application_password' ) ) {
+			return false;
+		}
+
+		$this->log_debug( __METHOD__ . '(): Running.' );
+		$this->auth_method = 'application_password';
+		$user_id           = wp_validate_application_password( false );
+
+		if ( empty( $user_id ) ) {
+			global $wp_rest_application_password_status;
+			if ( is_wp_error( $wp_rest_application_password_status ) ) {
+				$this->set_error( new WP_Error( 'gform_rest_authentication_error', $wp_rest_application_password_status->get_error_message(), array( 'status' => 401 ) ) );
+			}
+
+			$this->log_error( __METHOD__ . '(): Aborting; user not found.' );
+
+			return false;
+		}
+
+		$this->log_debug( __METHOD__ . '(): Valid.' );
+
+		return $this->set_user( (object) array( 'user_id' => $user_id ) );
+	}
+
+	/**
 	 * Basic Authentication.
 	 *
 	 * SSL-encrypted requests are not subject to sniffing or man-in-the-middle
@@ -226,15 +323,15 @@ class GF_REST_Authentication {
 		$consumer_secret   = '';
 
 		// If the $_GET parameters are present, use those first.
-		if ( ! empty( $_GET['consumer_key'] ) && ! empty( $_GET['consumer_secret'] ) ) {
-			$consumer_key    = $_GET['consumer_key']; // WPCS: sanitization ok.
-			$consumer_secret = $_GET['consumer_secret']; // WPCS: sanitization ok.
+		if ( ! empty( $_GET['consumer_key'] ) && ! empty( $_GET['consumer_secret'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			$consumer_key    = $_GET['consumer_key']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$consumer_secret = $_GET['consumer_secret']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended, WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 
 		// If the above is not present, we will do full basic auth.
 		if ( ! $consumer_key && ! empty( $_SERVER['PHP_AUTH_USER'] ) && ! empty( $_SERVER['PHP_AUTH_PW'] ) ) {
-			$consumer_key    = $_SERVER['PHP_AUTH_USER']; // WPCS: sanitization ok.
-			$consumer_secret = $_SERVER['PHP_AUTH_PW']; // WPCS: sanitization ok.
+			$consumer_key    = $_SERVER['PHP_AUTH_USER']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			$consumer_secret = $_SERVER['PHP_AUTH_PW']; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.MissingUnslash, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 
 		// Stop if don't have any key.
@@ -245,15 +342,15 @@ class GF_REST_Authentication {
 		}
 
 		// Get user data.
-		$this->user = $this->get_user_data_by_consumer_key( $consumer_key );
-		if ( empty( $this->user ) ) {
+		$user = $this->get_user_data_by_consumer_key( $consumer_key );
+		if ( empty( $user ) ) {
 			$this->log_error( __METHOD__ . '(): Aborting; user not found.' );
 
 			return false;
 		}
 
 		// Validate user secret.
-		if ( ! hash_equals( $this->user->consumer_secret, $consumer_secret ) ) {
+		if ( ! hash_equals( $user->consumer_secret, $consumer_secret ) ) {
 			$this->set_error( new WP_Error( 'gform_rest_authentication_error', __( 'Consumer secret is invalid.', 'gravityforms' ), array( 'status' => 401 ) ) );
 
 			return false;
@@ -261,7 +358,7 @@ class GF_REST_Authentication {
 
 		$this->log_debug( __METHOD__ . '(): Valid.' );
 
-		return $this->user->user_id;
+		return $this->set_user( $user );
 	}
 
 	/**
@@ -306,7 +403,7 @@ class GF_REST_Authentication {
 	 */
 	public function get_authorization_header() {
 		if ( ! empty( $_SERVER['HTTP_AUTHORIZATION'] ) ) {
-			return wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ); // WPCS: sanitization ok.
+			return wp_unslash( $_SERVER['HTTP_AUTHORIZATION'] ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
 		}
 
 		if ( function_exists( 'getallheaders' ) ) {
@@ -330,7 +427,7 @@ class GF_REST_Authentication {
 	 * @return array|WP_Error
 	 */
 	public function get_oauth_parameters() {
-		$params = array_merge( $_GET, $_POST ); // WPCS: CSRF ok.
+		$params = array_merge( $_GET, $_POST ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
 		$params = wp_unslash( $params );
 		$header = $this->get_authorization_header();
 
@@ -417,22 +514,22 @@ class GF_REST_Authentication {
 		}
 
 		// Fetch WP user by consumer key.
-		$this->user = $this->get_user_data_by_consumer_key( $params['oauth_consumer_key'] );
+		$user = $this->get_user_data_by_consumer_key( $params['oauth_consumer_key'] );
 
-		if ( empty( $this->user ) ) {
+		if ( empty( $user ) ) {
 			$this->set_error( new WP_Error( 'gform_rest_authentication_error', __( 'Consumer key is invalid.', 'gravityforms' ), array( 'status' => 401 ) ) );
 
 			return false;
 		}
 
 		// Perform OAuth validation.
-		$signature = $this->check_oauth_signature( $this->user, $params );
+		$signature = $this->check_oauth_signature( $user, $params );
 		if ( is_wp_error( $signature ) ) {
 			$this->set_error( $signature );
 			return false;
 		}
 
-		$timestamp_and_nonce = $this->check_oauth_timestamp_and_nonce( $this->user, $params['oauth_timestamp'], $params['oauth_nonce'] );
+		$timestamp_and_nonce = $this->check_oauth_timestamp_and_nonce( $user, $params['oauth_timestamp'], $params['oauth_nonce'] );
 		if ( is_wp_error( $timestamp_and_nonce ) ) {
 			$this->set_error( $timestamp_and_nonce );
 			return false;
@@ -440,7 +537,7 @@ class GF_REST_Authentication {
 
 		$this->log_debug( __METHOD__ . '(): Valid.' );
 
-		return $this->user->user_id;
+		return $this->set_user( $user );
 	}
 
 	/**
@@ -454,8 +551,8 @@ class GF_REST_Authentication {
 	 * @return true|WP_Error
 	 */
 	private function check_oauth_signature( $user, $params ) {
-		$http_method  = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( $_SERVER['REQUEST_METHOD'] ) : ''; // WPCS: sanitization ok.
-		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : ''; // WPCS: sanitization ok.
+		$http_method  = isset( $_SERVER['REQUEST_METHOD'] ) ? strtoupper( $_SERVER['REQUEST_METHOD'] ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
+		$request_path = isset( $_SERVER['REQUEST_URI'] ) ? parse_url( $_SERVER['REQUEST_URI'], PHP_URL_PATH ) : ''; // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized, WordPress.Security.ValidatedSanitizedInput.MissingUnslash
 		$wp_base      = get_home_url( null, '/', 'relative' );
 		if ( substr( $request_path, 0, strlen( $wp_base ) ) === $wp_base ) {
 			$request_path = substr( $request_path, strlen( $wp_base ) );
@@ -593,7 +690,7 @@ class GF_REST_Authentication {
 
 		$used_nonces = maybe_serialize( $used_nonces );
 
-		$wpdb->update(
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prefix . 'gf_rest_api_keys',
 			array( 'nonces' => $used_nonces ),
 			array( 'key_id' => $user->key_id ),
@@ -616,7 +713,7 @@ class GF_REST_Authentication {
 		global $wpdb;
 
 		$consumer_key = GFWebAPI::api_hash( sanitize_text_field( $consumer_key ) );
-		$user         = $wpdb->get_row(
+		$user         = $wpdb->get_row( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prepare(
 				"
 			SELECT key_id, user_id, permissions, consumer_key, consumer_secret, nonces
@@ -639,6 +736,10 @@ class GF_REST_Authentication {
 	 * @return bool|WP_Error
 	 */
 	private function check_permissions( $method ) {
+		if ( ! $this->is_gf_auth_method() ) {
+			return true;
+		}
+
 		$permissions = $this->user->permissions;
 
 		switch ( $method ) {
@@ -673,9 +774,13 @@ class GF_REST_Authentication {
 	 *
 	 */
 	private function update_last_access() {
+		if ( ! $this->is_gf_auth_method() ) {
+			return;
+		}
+
 		global $wpdb;
 
-		$wpdb->update(
+		$wpdb->update( // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->prefix . 'gf_rest_api_keys',
 			array( 'last_access' => current_time( 'mysql' ) ),
 			array( 'key_id' => $this->user->key_id ),
@@ -714,22 +819,25 @@ class GF_REST_Authentication {
 	 * @return mixed
 	 */
 	public function check_user_permissions( $result, $server, $request ) {
-		if ( $this->user ) {
-			$this->log_debug( sprintf( '%s(): Running for user #%d.', __METHOD__, $this->user->user_id ) );
-			// Check API Key permissions.
-			$allowed = $this->check_permissions( $request->get_method() );
-			if ( is_wp_error( $allowed ) ) {
-				$this->log_error( __METHOD__ . '(): ' . print_r( $allowed, true ) );
-
-				return $allowed;
-			}
-
-			// Register last access.
-			$this->update_last_access();
-			$this->log_debug( __METHOD__ . '(): Permissions valid.' );
+		if ( ! $this->user ) {
+			return $result;
 		}
 
-		return $result;
+		$this->log_debug( sprintf( '%s(): Running for user #%d.', __METHOD__, $this->user->user_id ) );
+
+		// Check API Key permissions.
+		$allowed = $this->check_permissions( $request->get_method() );
+		if ( is_wp_error( $allowed ) ) {
+			$this->log_error( __METHOD__ . '(): ' . print_r( $allowed, true ) );
+
+			return $allowed;
+		}
+
+		// Register last access.
+		$this->update_last_access();
+		$this->log_debug( __METHOD__ . '(): Permissions valid.' );
+
+		return rest_handle_options_request( null, $server, $request );
 	}
 
 
@@ -770,6 +878,17 @@ class GF_REST_Authentication {
 	 */
 	public function log_debug( $message ) {
 		GFAPI::log_debug( $message );
+	}
+
+	/**
+	 * Determines if the request is authenticated using credentials generated by Gravity Forms.
+	 *
+	 * @since 2.4.22
+	 *
+	 * @return bool
+	 */
+	private function is_gf_auth_method() {
+		return in_array( $this->auth_method, array( 'basic_auth', 'oauth1' ) );
 	}
 
 }

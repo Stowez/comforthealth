@@ -1,207 +1,124 @@
 <?php
 
 /**
- * @api {get} /redirection/v1/redirect Get redirects
- * @apiName GetRedirects
- * @apiDescription Get a paged list of redirects based after applying a set of filters and result ordering.
- * @apiGroup Redirect
+ * @phpstan-type RedirectListResponse array{
+ *   items: list<array<string, mixed>>,
+ *   total: int
+ * }
  *
- * @apiUse RedirectQueryParams
- *
- * @apiUse RedirectList
- * @apiUse 401Error
- * @apiUse 404Error
- */
-
-/**
- * @api {post} /redirection/v1/redirect Create redirect
- * @apiName CreateRedirect
- * @apiDescription Create a new redirect, and return a paged list of redirects.
- * @apiGroup Redirect
- *
- * @apiUse RedirectItem
- * @apiUse RedirectQueryParams
- *
- * @apiUse RedirectList
- * @apiUse 401Error
- * @apiUse 404Error
- * @apiError (Error 400) redirect_create_failed Failed to create redirect
- * @apiErrorExample {json} 404 Error Response:
- *     HTTP/1.1 400 Bad Request
- *     {
- *       "code": "redirect_create_failed",
- *       "message": "Failed to create redirect"
- *     }
- */
-
-/**
- * @api {post} /redirection/v1/redirect/:id Update redirect
- * @apiName UpdateRedirect
- * @apiDescription Update an existing redirect.
- * @apiGroup Redirect
- *
- * @apiParam (URL) {Integer} :id Redirect ID to update
- *
- * @apiUse RedirectItem
- *
- * @apiUse RedirectList
- * @apiUse 401Error
- * @apiUse 404Error
- * @apiError (Error 400) redirect_update_failed Failed to update redirect
- * @apiErrorExample {json} 404 Error Response:
- *     HTTP/1.1 400 Bad Request
- *     {
- *       "code": "redirect_update_failed",
- *       "message": "Failed to update redirect"
- *     }
- */
-
-/**
- * @api {post} /redirection/v1/bulk/redirect/:type Bulk redirect action
- * @apiName BulkAction
- * @apiDescription Enable, disable, and delete a set of redirects. The endpoint will return the next page of results after.
- * performing the action, based on the supplied query parameters. This information can be used to refresh a list displayed to the client.
- * @apiGroup Redirect
- *
- * @apiParam (URL) {String="delete","enable","disable"} :type Type of bulk action that is applied to every group ID.
- *
- * @apiParam (Query Parameter) {Integer[]} items Array of redirect IDs to perform the action on
- * @apiUse RedirectQueryParams
- *
- * @apiUse RedirectList
- * @apiUse 401Error
- * @apiUse 404Error
- * @apiUse 400MissingError
- * @apiError (Error 400) redirect_invalid_items Invalid array of items
- * @apiErrorExample {json} 404 Error Response:
- *     HTTP/1.1 400 Bad Request
- *     {
- *       "code": "redirect_invalid_items",
- *       "message": "Invalid array of items"
- *     }
- */
-
-/**
- * @apiDefine RedirectItem Redirect
- * All data associated with a redirect
- *
- * @apiParam {String="enabled","disabled"} status Status of the redirect
- * @apiParam {Integer} position Redirect position, used to determine order multiple redirects occur
- * @apiParam {Object} match_data Additional match parameters
- * @apiParam {Object} match_data.source Match against the source
- * @apiParam {Boolean} match_data.source.flag_regex `true` for regular expression, `false` otherwise
- * @apiParam {String="ignore","exact","pass"} match_data.source.flag_query Which query parameter matching to use
- * @apiParam {Boolean} match_data.source.flag_case] `true` for case insensitive matches, `false` otherwise
- * @apiParam {Boolean} match_data.source.flag_trailing] `true` to ignore trailing slashes, `false` otherwise
- * @apiParam {Boolean} regex True for regular expression, `false` otherwise
- * @apiParam {String} url The source URL
- * @apiParam {String="url","referrer","agent","login","header","custom","cookie","role","server","ip","page","language"} match_type What URL matching to use
- * @apiParam {String} [title] A descriptive title for the redirect, or empty for no title
- * @apiParam {Integer} group_id The group this redirect belongs to
- * @apiParam {String} action_type What to do when the URL is matched
- * @apiParam {Integer} action_code The HTTP code to return
- * @apiParam {String} action_data Any data associated with the `action_type` and `match_type`. For example, the target URL
- */
-
-/**
- * @apiDefine RedirectList A list of redirects
- * A list of redirects
- *
- * @apiSuccess {Object[]} items Array of redirect objects
- * @apiSuccess {Integer} items.id ID of redirect
- * @apiSuccess {String} items.url Source URL to match
- * @apiSuccess {String} items.match_url Match URL
- * @apiSuccess {Object} items.match_data Match against the source
- * @apiSuccess {String} items.match_type What URL matching to use
- * @apiSuccess {String} items.action_type What to do when the URL is matched
- * @apiSuccess {Integer} items.action_code The HTTP code to return
- * @apiSuccess {String} items.action_data Any data associated with the action_type. For example, the target URL
- * @apiSuccess {String} items.title Optional A descriptive title for the redirect, or empty for no title
- * @apiSuccess {String} items.hits Number of hits this redirect has received
- * @apiSuccess {String} items.regex True for regular expression, false otherwise
- * @apiSuccess {String} items.group_id The group this redirect belongs to
- * @apiSuccess {String} items.position Redirect position, used to determine order multiple redirects occur
- * @apiSuccess {String} items.last_access The date this redirect was last hit
- * @apiSuccess {String} items.status Status of the redirect
- * @apiSuccess {Integer} total Number of items
- *
- * @apiSuccessExample {json} Success-Response:
- *     HTTP/1.1 200 OK
- *     {
- *       "items": [
- *           {
- *             id: 3,
- *             url: "/source",
- *             match_url: "/source",
- *             match_data: "",
- *             action_code: "",
- *             action_type: "",
- *             action_data: "",
- *             match_type: "url",
- *             title: "Redirect title",
- *             hits: 5,
- *             regex: true,
- *             group_id: 15,
- *             position: 1,
- *             last_access: "2019-01-01 01:01:01"
- *             status: "enabled"
- *           }
- *       ],
- *       "total": 1
- *     }
- */
-
-/**
- * @apiDefine RedirectQueryParams
- *
- * @apiParam (Query Parameter) {String="enabled","disabled"} filterBy[status] Filter the results by the supplied status
- * @apiParam (Query Parameter) {String} filterBy[url] Filter the results by the supplied URL
- * @apiParam (Query Parameter) {String="regular","plain"} filterBy[url-match] Filter the results by `regular` expressions or non regular expressions
- * @apiParam (Query Parameter) {String} filterBy[match] Filter the results by the supplied match type
- * @apiParam (Query Parameter) {String} filterBy[action] Filter the results by the supplied action type
- * @apiParam (Query Parameter) {Integer} filterBy[http] Filter the results by the supplied redirect HTTP code
- * @apiParam (Query Parameter) {String="year","month","all"} filterBy[access] Filter the results by how long the redirect was last accessed
- * @apiParam (Query Parameter) {String} filterBy[target] Filter the results by the supplied redirect target
- * @apiParam (Query Parameter) {String} filterBy[title] Filter the results by the supplied redirect title
- * @apiParam (Query Parameter) {Integer} filterBy[group] Filter the results by the supplied redirect group ID
- * @apiParam (Query Parameter) {Integer="1","2","3"} filterBy[module] Filter the results by the supplied module ID
- * @apiParam (Query Parameter) {String="url","last_count","last_access","position","id"} orderby Order in which results are returned
- * @apiParam (Query Parameter) {String="asc","desc"} direction Direction to order the results by (ascending or descending)
- * @apiParam (Query Parameter) {Integer{1...200}} per_page Number of results per request
- * @apiParam (Query Parameter) {Integer} page Current page of results
+ * Redirect API endpoint
  */
 class Redirection_Api_Redirect extends Redirection_Api_Filter_Route {
-	public function __construct( $namespace ) {
-		$orders = [ 'url', 'last_count', 'last_access', 'position', 'id' ];
-		$filters = [ 'status', 'url-match', 'match', 'action', 'http', 'access', 'url', 'target', 'title', 'group' ];
+	/**
+	 * Redirect API endpoint constructor
+	 *
+	 * @param non-falsy-string $api_namespace Namespace.
+	 */
+	public function __construct( $api_namespace ) {
+		$orders = [ 'source', 'last_count', 'last_access', 'position', 'id', '' ];
+		$filters = [ 'status', 'url-match', 'match', 'action', 'http', 'access', 'url', 'target', 'title', 'group', 'id' ];
 
-		register_rest_route( $namespace, '/redirect', array(
-			'args' => $this->get_filter_args( $orders, $filters ),
-			$this->get_route( WP_REST_Server::READABLE, 'route_list', [ $this, 'permission_callback_manage' ] ),
-			$this->get_route( WP_REST_Server::EDITABLE, 'route_create', [ $this, 'permission_callback_add' ] ),
-		) );
-
-		register_rest_route( $namespace, '/redirect/(?P<id>[\d]+)', array(
-			$this->get_route( WP_REST_Server::EDITABLE, 'route_update', [ $this, 'permission_callback_add' ] ),
-		) );
-
-		register_rest_route( $namespace, '/redirect/post', array(
-			$this->get_route( WP_REST_Server::READABLE, 'route_match_post', [ $this, 'permission_callback_manage' ] ),
-			'args' => [
-				'text' => [
-					'description' => 'Text to match',
-					'type' => 'string',
+		// GET /redirect - List redirects
+		// POST /redirect - Create redirect
+		register_rest_route(
+			$api_namespace,
+			'/redirect',
+			[
+				[
+					'methods' => WP_REST_Server::READABLE,
+					'callback' => [ $this, 'route_list' ],
+					'permission_callback' => [ $this, 'permission_callback_manage' ],
+					'args' => $this->get_filter_args( $orders, $filters ),
 				],
-			],
-		) );
+				[
+					'methods' => WP_REST_Server::EDITABLE,
+					'callback' => [ $this, 'route_create' ],
+					'permission_callback' => [ $this, 'permission_callback_add' ],
+					'args' => $this->get_filter_args( $orders, $filters ),
+				],
+			]
+		);
 
-		$this->register_bulk( $namespace, '/bulk/redirect/(?P<bulk>delete|enable|disable|reset)', $orders, 'route_bulk', [ $this, 'permission_callback_bulk' ] );
+		// POST /redirect/:id - Update redirect
+		register_rest_route(
+			$api_namespace,
+			'/redirect/(?P<id>[\d]+)',
+			[
+				[
+					'methods' => WP_REST_Server::EDITABLE,
+					'callback' => [ $this, 'route_update' ],
+					'permission_callback' => [ $this, 'permission_callback_add' ],
+				],
+			]
+		);
+
+		// GET /redirect/post - Search for posts
+		register_rest_route(
+			$api_namespace,
+			'/redirect/post',
+			[
+				[
+					'methods' => WP_REST_Server::READABLE,
+					'callback' => [ $this, 'route_match_post' ],
+					'permission_callback' => [ $this, 'permission_callback_manage' ],
+					'args' => [
+						'text' => [
+							'description' => 'Text to match',
+							'type' => 'string',
+							'required' => true,
+						],
+					],
+				],
+			]
+		);
+
+		// POST /bulk/redirect/:bulk - Bulk actions on redirects
+		register_rest_route(
+			$api_namespace,
+			'/bulk/redirect/(?P<bulk>delete|enable|disable|reset)',
+			[
+				[
+					'methods' => WP_REST_Server::EDITABLE,
+					'callback' => [ $this, 'route_bulk' ],
+					'permission_callback' => [ $this, 'permission_callback_bulk' ],
+					'args' => array_merge(
+						$this->get_filter_args( $orders, $filters ),
+						[
+							'global' => [
+								'description' => 'Apply bulk action globally, as per filters',
+								'type' => 'boolean',
+							],
+							'items' => [
+								'description' => 'Array of IDs to perform action on',
+								'type' => 'array',
+								'items' => [
+									'description' => 'Item ID',
+									'type' => [ 'string', 'number' ],
+								],
+							],
+						]
+					),
+				],
+			]
+		);
 	}
 
+	/**
+	 * Checks a manage capability
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request Request.
+	 * @return bool
+	 */
 	public function permission_callback_manage( WP_REST_Request $request ) {
 		return Redirection_Capabilities::has_access( Redirection_Capabilities::CAP_REDIRECT_MANAGE );
 	}
 
+	/**
+	 * Checks a bulk capability
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request Request.
+	 * @return bool
+	 */
 	public function permission_callback_bulk( WP_REST_Request $request ) {
 		if ( $request['bulk'] === 'delete' ) {
 			return Redirection_Capabilities::has_access( Redirection_Capabilities::CAP_REDIRECT_DELETE );
@@ -210,14 +127,32 @@ class Redirection_Api_Redirect extends Redirection_Api_Filter_Route {
 		return $this->permission_callback_add( $request );
 	}
 
+	/**
+	 * Checks a create capability
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request Request.
+	 * @return bool
+	 */
 	public function permission_callback_add( WP_REST_Request $request ) {
 		return Redirection_Capabilities::has_access( Redirection_Capabilities::CAP_REDIRECT_ADD );
 	}
 
+	/**
+	 * Get redirect list
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request The request.
+	 * @return RedirectListResponse
+	 */
 	public function route_list( WP_REST_Request $request ) {
 		return Red_Item::get_filtered( $request->get_params() );
 	}
 
+	/**
+	 * Create new redirect(s)
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request The request.
+	 * @return RedirectListResponse|WP_Error
+	 */
 	public function route_create( WP_REST_Request $request ) {
 		$params = $request->get_params();
 		$urls = array();
@@ -229,8 +164,16 @@ class Redirection_Api_Redirect extends Redirection_Api_Filter_Route {
 				$urls = $params['url'];
 			}
 
+			// Remove duplicates
+			$unique = [];
 			foreach ( $urls as $url ) {
+				$unique[ $url ] = $url;
+			}
+
+			foreach ( $unique as $url ) {
 				$params['url'] = $url;
+
+				// Data is sanitized in the create function
 				$redirect = Red_Item::create( $params );
 
 				if ( is_wp_error( $redirect ) ) {
@@ -242,73 +185,105 @@ class Redirection_Api_Redirect extends Redirection_Api_Filter_Route {
 		return $this->route_list( $request );
 	}
 
+	/**
+	 * Update redirect
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request The request.
+	 * @return array{item: array<string, mixed>}|WP_Error
+	 */
 	public function route_update( WP_REST_Request $request ) {
 		$params = $request->get_params();
 		$redirect = Red_Item::get_by_id( intval( $params['id'], 10 ) );
 
-		if ( $redirect ) {
+		if ( $redirect !== false ) {
 			$result = $redirect->update( $params );
 
 			if ( is_wp_error( $result ) ) {
 				return $this->add_error_details( $result, __LINE__ );
 			}
 
-			return array( 'item' => $redirect->to_json() );
+			return [ 'item' => $redirect->to_json() ];
 		}
 
 		return $this->add_error_details( new WP_Error( 'redirect_update_failed', 'Invalid redirect details' ), __LINE__ );
 	}
 
+	/**
+	 * Perform bulk action on redirects
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request The request.
+	 * @return RedirectListResponse|WP_Error
+	 */
 	public function route_bulk( WP_REST_Request $request ) {
-		$action = $request['bulk'];
-		$items = explode( ',', $request['items'] );
+		$params = $request->get_params();
+		$action = sanitize_text_field( $request['bulk'] );
 
-		if ( is_array( $items ) ) {
+		if ( isset( $params['items'] ) && is_array( $params['items'] ) && count( $params['items'] ) > 0 ) {
+			$items = $params['items'];
+
 			foreach ( $items as $item ) {
 				$redirect = Red_Item::get_by_id( intval( $item, 10 ) );
 
-				if ( $redirect ) {
-					if ( $action === 'delete' ) {
-						$redirect->delete();
-					} elseif ( $action === 'disable' ) {
-						$redirect->disable();
-					} elseif ( $action === 'enable' ) {
-						$redirect->enable();
-					} elseif ( $action === 'reset' ) {
-						$redirect->reset();
-					}
+				if ( $redirect === false ) {
+					return $this->add_error_details( new WP_Error( 'redirect_bulk_failed', 'Invalid redirect' ), __LINE__ );
+				}
+
+				if ( $action === 'delete' ) {
+					$redirect->delete();
+				} elseif ( $action === 'disable' ) {
+					$redirect->disable();
+				} elseif ( $action === 'enable' ) {
+					$redirect->enable();
+				} elseif ( $action === 'reset' ) {
+					$redirect->reset();
 				}
 			}
-
-			return $this->route_list( $request );
+		} elseif ( isset( $params['global'] ) && $params['global'] !== false ) {
+			// Params are sanitized in the filter class
+			if ( $action === 'delete' ) {
+				Red_Item::delete_all( $params );
+			} elseif ( $action === 'reset' ) {
+				Red_Item::reset_all( $params );
+			} elseif ( $action === 'enable' || $action === 'disable' ) {
+				Red_Item::set_status_all( $action, $params );
+			}
 		}
 
-		return $this->add_error_details( new WP_Error( 'redirect_invalid_items', 'Invalid array of items' ), __LINE__ );
+		return $this->route_list( $request );
 	}
 
+	/**
+	 * Search for a post
+	 *
+	 * @param WP_REST_Request<array<string, mixed>> $request The request.
+	 * @return list<array{title: string, value: string|false}>
+	 */
 	public function route_match_post( WP_REST_Request $request ) {
+		global $wpdb;
+
 		$params = $request->get_params();
-		$search = isset( $params['text'] ) ? $params['text'] : false;
+		$search = sanitize_text_field( $params['text'] );
 		$results = [];
 
-		if ( $search ) {
-			global $wpdb;
+		$posts = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT ID,post_title,post_name FROM $wpdb->posts WHERE post_status='publish' AND (post_title LIKE %s OR post_name LIKE %s) " .
+				"AND post_type IN ('post','page')",
+				'%' . $wpdb->esc_like( $search ) . '%',
+				'%' . $wpdb->esc_like( $search ) . '%'
+			)
+		);
 
-			$posts = $wpdb->get_results(
-				$wpdb->prepare(
-					"SELECT ID,post_title,post_name FROM $wpdb->posts WHERE post_status='publish' AND (post_title LIKE %s OR post_name LIKE %s) " .
-					"AND post_type NOT IN ('nav_menu_item','wp_block','oembed_cache')",
-					'%' . $wpdb->esc_like( $search ) . '%', '%' . $wpdb->esc_like( $search ) . '%'
-				)
-			);
-
-			foreach ( (array) $posts as $post ) {
-				$results[] = [
-					'title' => $post->post_title,
-					'slug' => $post->post_name,
-					'url' => get_permalink( $post->ID ),
-				];
+		foreach ( (array) $posts as $post ) {
+			$title = $post->post_name;
+			if ( strpos( $post->post_title, $search ) !== false ) {
+				$title = $post->post_title;
 			}
+
+			$results[] = [
+				'title' => $title,
+				'value' => get_permalink( $post->ID ),
+			];
 		}
 
 		return $results;

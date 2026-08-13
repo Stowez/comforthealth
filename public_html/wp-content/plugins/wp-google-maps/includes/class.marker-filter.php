@@ -4,10 +4,16 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 class MarkerFilter extends Factory
 {
 	protected $_center;
 	protected $_radius;
+	
+	protected $_offset;
+	protected $_limit;
 	
 	public function __construct($options=null)
 	{
@@ -26,6 +32,9 @@ class MarkerFilter extends Factory
 	
 	public function __set($name, $value)
 	{
+		if(isset($name[0]) && $name[0] === '_')
+			return;
+
 		if(property_exists($this, "_$name"))
 		{
 			switch($name)
@@ -42,6 +51,16 @@ class MarkerFilter extends Factory
 					
 					$this->_center = $arr;
 					
+					break;
+					
+				case 'limit':
+				case 'offset':
+				
+					if(!is_numeric($value))
+						throw new \Exception('Value must be numeric');
+					
+					$this->{"_$name"} = $value;
+				
 					break;
 					
 				default:
@@ -69,10 +88,15 @@ class MarkerFilter extends Factory
 		$this->map = new Map($id);
 	}
 	
-	protected function applyRadiusClause($query)
+	protected function applyRadiusClause($query, $context=Query::WHERE)
 	{
+		global $wpgmza;
+		
 		if(!$this->center || !$this->radius)
 			return;
+		
+		if(empty($this->map))
+			$this->loadMap();
 		
 		$lat = $this->_center['lat'] / 180 * 3.1415926;
 		$lng = $this->_center['lng'] / 180 * 3.1415926;
@@ -81,31 +105,31 @@ class MarkerFilter extends Factory
 		if($this->map && $this->map->storeLocatorDistanceUnits == Distance::UNITS_MI)
 			$radius *= Distance::KILOMETERS_PER_MILE;
 		
-		$query->where['radius'] = '
+		$query->{$context}['radius'] = "
 			(
-				6381 *
+				6371 *
 			
 				2 *
 			
 				ATAN2(
 					SQRT(
-						POW( SIN( ( (X(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 ) +
-						COS( X(latlng) / 180 * 3.1415926 ) * COS( %f ) *
-						POW( SIN( ( (Y(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 )
+						POW( SIN( ( ({$wpgmza->spatialFunctionPrefix}X(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 ) +
+						COS( {$wpgmza->spatialFunctionPrefix}X(latlng) / 180 * 3.1415926 ) * COS( %f ) *
+						POW( SIN( ( ({$wpgmza->spatialFunctionPrefix}Y(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 )
 					),
 					
 					SQRT(1 - 
 						(
-							POW( SIN( ( (X(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 ) +
-							COS( X(latlng) / 180 * 3.1415926 ) * COS( %f ) *
-							POW( SIN( ( (Y(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 )
+							POW( SIN( ( ({$wpgmza->spatialFunctionPrefix}X(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 ) +
+							COS( {$wpgmza->spatialFunctionPrefix}X(latlng) / 180 * 3.1415926 ) * COS( %f ) *
+							POW( SIN( ( ({$wpgmza->spatialFunctionPrefix}Y(latlng) / 180 * 3.1415926) - %f ) / 2 ), 2 )
 						)
 					)
 				)
 			)
 			
 			< %f
-		';
+		";
 		
 		$query->params[] = $lat;
 		$query->params[] = $lat;
@@ -118,38 +142,119 @@ class MarkerFilter extends Factory
 		$query->params[] = $radius;
 	}
 	
+	protected function applyIDsClause($set)
+	{
+		if(empty($this->ids))
+			return;
+		
+		$query->in('id', $set);
+	}
+	
+	protected function applyLimit($query)
+	{
+		if(empty($this->_limit))
+			return;
+		
+		$limit = "";
+		
+		if(!empty($this->_offset) || $this->_offset === 0 || $this->_offset === "0")
+			$limit = $this->_offset . ",";
+		
+		$limit .= $this->_limit;
+		
+		$query->limit = $limit;
+	}
+		
 	public function getQuery()
 	{
 		global $WPGMZA_TABLE_NAME_MARKERS;
-		
+
 		$query = new Query();
-		
+
 		$query->type	= 'SELECT';
 		$query->table	= $WPGMZA_TABLE_NAME_MARKERS;
-		
+
 		$this->applyRadiusClause($query);
-		
+		$this->applyIDsClause($query);
+		$this->applyLimit($query);
+		$this->applyApprovedClause($query);
+		$this->applyActiveMapClause($query);
+
 		return $query;
+	}
+
+	/* Restrict results to approved markers unless the request
+	   originates from the plugin's own admin UI and the user has
+	   edit capability. Capability check is the real gate; the
+	   HTTP_REFERER check just narrows the bypass to in-plugin admin
+	   pages so admins browsing the frontend still see the
+	   approved-only view non-admin visitors see. Mirrors
+	   MarkerDataTable::getWhereClause(). Pro overrides this in
+	   ProMarkerFilter to honor the permission-gated
+	   `includeUnapproved` option instead. */
+	protected function applyApprovedClause($query)
+	{
+		global $wpgmza;
+
+		if(isset($_SERVER['HTTP_REFERER'])
+			&& preg_match('/page=wp-google-maps-menu/', sanitize_text_field(wp_unslash($_SERVER['HTTP_REFERER'])))
+			&& $wpgmza->isUserAllowedToEdit())
+			return;
+
+		$query->where['approved'] = 'approved = 1';
+	}
+
+	protected function applyActiveMapClause($query)
+	{
+		global $wpgmza;
+		global $WPGMZA_TABLE_NAME_MAPS;
+
+		if(isset($_SERVER['HTTP_REFERER'])
+			&& preg_match('/page=wp-google-maps-menu/', sanitize_text_field(wp_unslash($_SERVER['HTTP_REFERER'])))
+			&& $wpgmza->isUserAllowedToEdit())
+			return;
+
+		$query->where['active_map'] = "map_id IN (SELECT id FROM $WPGMZA_TABLE_NAME_MAPS WHERE active = 0)";
+	}
+	
+	public function getColumns($fields=null)
+	{
+		if(empty($fields))
+			return array('*');
+		
+		$result = array();
+		
+		foreach($fields as $field)
+			$result[] = $field;
+			
+		return $result;
 	}
 	
 	public function getFilteredMarkers($fields=null)
 	{
 		global $wpdb;
+		global $wpgmza;
 		
-		$query = $this->getQuery();
-		
-		if($fields == null)
-			$query->fields[] = '*';
-		else
-			foreach($fields as $field)
-				$query->fields[] = $field;
-			//$query->fields = $fields;
+		$query = $this->getQuery($fields);
+		$query->fields = $this->getColumns($fields);
 		
 		$sql = $query->build();
-		
 		$results = $wpdb->get_results($sql);
+
+		// NB: Optimize by only fetching ID here, for filtering. Only fetch the rest if fetch ID not set.
+		if(count($query->fields) == 1 && $query->fields[0] == 'id')
+			return $results;
 		
-		return $results;
+		$markers = array();
+
+		$wpgmza->__activeMarkerFilter = $this;
+		foreach($results as $data){
+			$markers[] = Marker::createInstance($data, Crud::BULK_READ, true);
+		}
+		$wpgmza->__activeMarkerFilter = false;
+		
+		/* Developer Hook (Filter) - Alter marker filter results, passes markers and marker filter instance, must return markers */
+		return apply_filters('wpgmza_fetch_integrated_markers', $markers, $this);
 	}
 	
 	public function getFilteredIDs()
@@ -161,25 +266,15 @@ class MarkerFilter extends Factory
 		$query->fields[] = 'id';
 		
 		$sql = $query->build();
+		$ids = $wpdb->get_col($sql);
 		
-		return $wpdb->get_col($sql);
+		/* Developer Hook (Filter) - Add or alter integrated markers output, unused and not safe to use */
+		$integrated = apply_filters('wpgmza_fetch_integrated_markers', $markers, $this);
+		foreach($integrated as $key => $value)
+			$ids[] = $value->id;
+		
+		return $ids;
 	}
 	
 	
 }
-
-/*$filter = MarkerFilter::createInstance();
-
-header('Content-type: text/plain');
-
-$filter->map_id = 1;
-$filter->center = array(
-	'lat'	=> 51,
-	'lng'	=> -3
-);
-$filter->radius = 500;
-//$filter->keywords = 'test';
-
-print_r( $filter->getFilteredIDs() );
-
-exit;*/

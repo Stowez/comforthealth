@@ -4,9 +4,20 @@
  * Regular expression helper
  */
 class Red_Regex {
+	/**
+	 * @var string
+	 */
 	private $pattern;
+
+	/**
+	 * @var bool
+	 */
 	private $case;
 
+	/**
+	 * @param string $pattern
+	 * @param bool $case_insensitive
+	 */
 	public function __construct( $pattern, $case_insensitive = false ) {
 		$this->pattern = rawurldecode( $pattern );
 		$this->case = $case_insensitive;
@@ -17,17 +28,25 @@ class Red_Regex {
 	 *
 	 * Note: if the pattern is invalid it will not match
 	 *
-	 * @param string $target Text to match the regex against
+	 * @param string $target Text to match the regex against.
 	 * @return boolean match
 	 */
 	public function is_match( $target ) {
 		return @preg_match( $this->get_regex(), $target, $matches ) > 0;
 	}
 
+	/**
+	 * @param string $path
+	 * @return string
+	 */
 	private function encode_path( $path ) {
 		return str_replace( ' ', '%20', $path );
 	}
 
+	/**
+	 * @param string $path
+	 * @return string
+	 */
 	private function encode_query( $path ) {
 		return str_replace( ' ', '+', $path );
 	}
@@ -37,12 +56,13 @@ class Red_Regex {
 	 *
 	 * Note: if the pattern is invalid it will return $target
 	 *
-	 * @param string $replace_pattern The regex replace pattern
-	 * @param string $target Text to match the regex against
+	 * @param string $replace_pattern The regex replace pattern.
+	 * @param string $target Text to match the regex against.
 	 * @return string Replaced text
 	 */
 	public function replace( $replace_pattern, $target ) {
-		$result = @preg_replace( $this->get_regex(), $replace_pattern, $target );
+		$regex = $this->get_regex();
+		$result = @preg_replace( $regex, $replace_pattern, $target );
 
 		if ( is_null( $result ) ) {
 			return $target;
@@ -59,6 +79,9 @@ class Red_Regex {
 		return $result;
 	}
 
+	/**
+	 * @return string
+	 */
 	private function get_regex() {
 		$at_escaped = str_replace( '@', '\\@', $this->pattern );
 		$case = '';
@@ -70,6 +93,9 @@ class Red_Regex {
 		return '@' . $at_escaped . '@s' . $case;
 	}
 
+	/**
+	 * @return bool
+	 */
 	public function is_ignore_case() {
 		return $this->case;
 	}

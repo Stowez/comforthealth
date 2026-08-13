@@ -255,7 +255,7 @@
 /* Component containers
 ----------------------------------*/
 .acf-ui-datepicker .ui-widget {
-	font-family: "Open Sans",​ sans-serif;
+	font-family: inherit;
 	font-size: 14px;
 }
 .acf-ui-datepicker .ui-widget .ui-widget {
@@ -265,7 +265,7 @@
 .acf-ui-datepicker .ui-widget select,
 .acf-ui-datepicker .ui-widget textarea,
 .acf-ui-datepicker .ui-widget button {
-	font-family: "Open Sans",​ sans-serif;
+	font-family: inherit;
 	font-size: 1em;
 }
 .acf-ui-datepicker .ui-widget-content {
@@ -613,25 +613,25 @@
 .acf-ui-datepicker .ui-corner-top,
 .acf-ui-datepicker .ui-corner-left,
 .acf-ui-datepicker .ui-corner-tl {
-	border-top-left-radius: 3;
+	border-top-left-radius: 3px;
 }
 .acf-ui-datepicker .ui-corner-all,
 .acf-ui-datepicker .ui-corner-top,
 .acf-ui-datepicker .ui-corner-right,
 .acf-ui-datepicker .ui-corner-tr {
-	border-top-right-radius: 3;
+	border-top-right-radius: 3px;
 }
 .acf-ui-datepicker .ui-corner-all,
 .acf-ui-datepicker .ui-corner-bottom,
 .acf-ui-datepicker .ui-corner-left,
 .acf-ui-datepicker .ui-corner-bl {
-	border-bottom-left-radius: 3;
+	border-bottom-left-radius: 3px;
 }
 .acf-ui-datepicker .ui-corner-all,
 .acf-ui-datepicker .ui-corner-bottom,
 .acf-ui-datepicker .ui-corner-right,
 .acf-ui-datepicker .ui-corner-br {
-	border-bottom-right-radius: 3;
+	border-bottom-right-radius: 3px;
 }
 
 /* Overlays */

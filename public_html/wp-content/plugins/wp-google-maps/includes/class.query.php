@@ -2,15 +2,26 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
+#[\AllowDynamicProperties]
 class Query
 {
+	const WHERE			= "where";
+	const HAVING		= "having";
+	
 	private $_type;
 	private $_table;
 	
 	private $_fields;
 	
 	private $_join;
+	private $_leftJoin;
 	private $_where;
+	
+	private $_union;
+	
 	private $_groupBy;
 	private $_orderBy;
 	private $_having;
@@ -27,7 +38,11 @@ class Query
 		$this->_fields	= new QueryFragment();
 
 		$this->_join 	= new QueryFragment();
+		$this->_leftJoin = new QueryFragment();
 		$this->_where 	= new QueryFragment();
+		
+		$this->_union	= new QueryFragment();
+		
 		$this->_groupBy = new QueryFragment();
 		$this->_orderBy = new QueryFragment();
 		$this->_having 	= new QueryFragment();
@@ -75,17 +90,16 @@ class Query
 				if(!is_array($value))
 					throw new \Exception('Fields must be an array');
 				
-				var_dump($this->_fields);
-				
-				array_splice($this->_fields, 0, count($this->_fields), $value);
+				foreach($value as $k => $v)
+					$this->_fields->{$k} = $v;
 
 				break;
 				
 			case 'limit':
-				if(!preg_match('/\d+\s*,\s*\d+/', $value))
+				if(!preg_match('/^\s*(\d+)(?:\s*,\s*(\d+))?\s*$/', $value, $m))
 					throw new \Exception('Invalid SQL limit');
-			
-				$this->_limit = $value;
+
+				$this->_limit = isset($m[2]) ? ((int)$m[1] . ',' . (int)$m[2]) : (int)$m[1];
 
 				break;
 				
@@ -148,40 +162,101 @@ class Query
 		$this->assertTypeValid();
 		$this->assertTableValid();
 		
-		$qstr = $this->_type;
+		$queryStrings = array();
+		$queries = array($this);
 		
-		switch($this->_type)
+		if(count($this->union))
 		{
-			case 'SELECT':
-				if(empty($this->_fields))
-					throw new \Exception('You must specify fields to select');
+			if($this->_type != 'SELECT')
+				throw new \Exception('UNION is only supported for SELECT queries');
 			
-				$qstr .= " " . implode(', ', $this->_fields->toArray()) . " FROM";
-				break;
-			
-			case 'INSERT':
-				$qstr .= " INTO";
-				break;
-				
-			case 'DELETE':
-				$qstr .= " FROM";
-				break;
+			foreach($this->union as $unionQuery)
+			{
+				$queries[] = $unionQuery;
+			}
 		}
 		
-		$qstr .= " " . $this->_table;
+		foreach($queries as $query)
+		{
+			$qstr = $query->_type;
+			
+			switch($query->_type)
+			{
+				case 'SELECT':
+					if(empty($query->_fields))
+						throw new \Exception('You must specify fields to select');
+					
+					$arr = $query->_fields->toArray();
+					
+					if(!empty($arr))
+						$str = implode(', ', $arr);
+					else
+						$str = '*';
+				
+					$qstr .= " $str FROM";
+					break;
+				
+				case 'INSERT':
+					$qstr .= " INTO";
+					break;
+					
+				case 'DELETE':
+					$qstr .= " FROM";
+					break;
+			}
+			
+			$qstr .= " " . $query->_table;
+			
+			if(!empty($query->_join))
+			{
+				$qstr .= ' ';
+				
+				foreach($query->_join as $join)
+					$qstr .= 'JOIN ' . $join;
+			}
+
+			if(!empty($query->_leftJoin))
+			{
+				$qstr .= ' ';
+				
+				foreach($query->_leftJoin as $join)
+					$qstr .= 'LEFT JOIN ' . $join;
+			}
+			
+			$where = $query->_where->toArray();
+			if(!empty($where))
+				$qstr .= " WHERE " . implode(' AND ', $where);
+
+			$group = $query->_groupBy->toArray();
+			if(!empty($group))
+				$qstr .= " GROUP BY " . implode(', ', $group);
+			
+			$having = $query->_having->toArray();
+			if(!empty($having))
+				$qstr .= " HAVING " . implode(' AND ', $having);
+			
+			$params = $query->_params->toArray();
+			
+			if(count($params))
+				$qstr = $wpdb->prepare($qstr, $params);
+			
+			$queryStrings[] = $qstr;
+		}
 		
-		$where = $this->_where->toArray();
-		if(!empty($where))
-			$qstr .= " WHERE " . implode(' AND ', $where);
+		if(count($queryStrings) == 1)
+			$qstr = $queryStrings[0];
+		else
+		{
+			$qstr = implode(' UNION ALL ', $queryStrings);
+		}
+
+		$orderBy = $query->_orderBy->toArray();
+		if(!empty($orderBy))
+			$qstr .= " ORDER BY " . implode(', ', $orderBy); 
 		
 		if(!empty($this->_limit))
 			$qstr .= " LIMIT {$this->_limit}";
 		
-		$params = $this->_params->toArray();
-		
-		if(empty($params))
-			return $qstr;
-		
-		return $wpdb->prepare($qstr, $params);
+		return $qstr;
 	}
 }

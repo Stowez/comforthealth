@@ -1,5 +1,5 @@
 jQuery(function($){
-	jQuery(window).on("load", function(){
+	jQuery(document).ready(function(){
 		if(typeof wpgmaps_localize !== "undefined"){
 			for(var i in wpgmaps_localize){
 				var mapid = wpgmaps_localize[i]['id'];
@@ -45,7 +45,15 @@ jQuery(function($){
 	}
 
 	function add_rectangle(mapid, data)	{
-		data.map = MYMAP[mapid].map.googleMap;
+
+		var map;
+
+		if(MYMAP[mapid].map instanceof google.maps.Map)
+			map = MYMAP[mapid].map;
+		else if(MYMAP[mapid].map instanceof WPGMZA.Map)
+			map = MYMAP[mapid].googleMap;
+
+		data.map = map;
 		
 		data.fillColor = data.color;
 		data.fillOpacity = parseFloat(data.opacity);

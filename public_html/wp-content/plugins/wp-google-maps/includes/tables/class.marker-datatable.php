@@ -2,6 +2,9 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 class MarkerDataTable extends DataTable
 {
 	public function __construct($ajax_parameters=null, $datatable_options=null)
@@ -19,5 +22,20 @@ class MarkerDataTable extends DataTable
 			'address'		=> __('Address',		'wp-google-maps'),
 			'description'	=> __('Description',	'wp-google-maps')
 		);
+	}
+	
+	protected function getWhereClause($input_params, &$query_params, $clause_for_total=false)
+	{
+		global $wpgmza;
+		
+		$clause = AjaxTable::getWhereClause($input_params, $query_params, $clause_for_total);
+		
+		if(!((isset($_SERVER['HTTP_REFERER']) && preg_match('/page=wp-google-maps-menu/', sanitize_text_field(wp_unslash($_SERVER['HTTP_REFERER']))) && $wpgmza->isUserAllowedToEdit())))
+		{
+			$clause .= ' AND approved=%d';
+			$query_params[] = 1;
+		}
+		
+		return $clause;
 	}
 }

@@ -2,6 +2,9 @@
 
 namespace WPGMZA;
 
+if(!defined('ABSPATH'))
+	return;
+
 /**
  * The Factory class is a base class which can be used to make any classes
  * externally extensible. A filter is added for wpgmza_create_{class} which
@@ -12,6 +15,7 @@ namespace WPGMZA;
  * createInstance on the subclass. Calling new on the constructor directly will
  * not cause this filter to fire, and the extended class will not be used.
  */
+#[\AllowDynamicProperties]
 class Factory
 {
 	/**
@@ -25,15 +29,27 @@ class Factory
 		$count = count($args);
 		$filter = "wpgmza_create_$class";
 
-		if($class == 'WPGMZA\Factory')
+
+		if($class == 'WPGMZA\\Factory')
 			throw new \Exception('Factory createInstance would return abstract Factory');
 		
-		if(empty($args))
-			$filter_args = array($filter, null);
+		// TODO: If the created object is a descendant of CRUD 
+		if(empty($args)){
+			if(is_subclass_of($class, '\\WPGMZA\\Crud'))
+				$filter_args = array($filter, -1);
+			else
+				$filter_args = array($filter, null);
+		}
 		else
 			$filter_args = array_merge(array($filter), $args);
 		
+		/* Developer Hook (Filter) - Apply CRUD class filters */
 		$override = call_user_func_array('apply_filters', $filter_args);
+		
+
+		// NB: This stops override being the same as the first argument, which is needed for example when passing a Map as the first argument of StoreLocator
+		if(count($args) && $args[0] === $override)
+			$override = null;
 		
 		if($override instanceof \WPGMZA\Factory)
 			return $override;

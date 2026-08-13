@@ -21,7 +21,7 @@ jQuery(function($) {
 		
 		this.canvas = document.createElement("canvas");
 		this.canvas.className = "wpgmza-ol-canvas-overlay";
-		mapElement.append(this.canvas);
+		olViewportElement.find('.ol-layers .ol-layer:first-child').prepend(this.canvas);
 		
 		this.renderFunction = function(event) {
 			
@@ -82,14 +82,14 @@ jQuery(function($) {
 		
 		return Math.abs(outerPixels.x - centerPixels.x);
 
-		if(!window.testMarker){
+		/*if(!window.testMarker){
 			window.testMarker = WPGMZA.Marker.createInstance({
 				position: outer
 			});
 			WPGMZA.maps[0].addMarker(window.testMarker);
 		}
 		
-		return 100;
+		return 100;*/
 	}
 	
 	WPGMZA.OLModernStoreLocatorCircle.prototype.getScale = function()

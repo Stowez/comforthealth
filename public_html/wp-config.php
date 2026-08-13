@@ -1,4 +1,6 @@
 <?php
+define( 'WP_CACHE', true ); // Added by WP Rocket
+
 /**
  * The base configuration for WordPress
  *
@@ -21,8 +23,6 @@
 // ** MySQL settings - You can get this info from your web host ** //
 /** The name of the database for WordPress */
 
-define('WP_CACHE', true);
-define( 'WPCACHEHOME', '/srv/comforthealth/public_html/wp-content/plugins/wp-super-cache/' );
 define('DB_NAME', 'comforth_db');
 
 /** MySQL database username */
@@ -81,7 +81,9 @@ $table_prefix  = 'wp_';
  * @link https://codex.wordpress.org/Debugging_in_WordPress
  */
 define('WP_DEBUG', false);
-define( 'WP_AUTO_UPDATE_CORE', true );
+define( 'WP_DEBUG_LOG', false );
+// define( 'WP_AUTO_UPDATE_CORE', true );
+define( 'WP_AUTO_UPDATE_CORE', 'minor' );
 /* That's all, stop editing! Happy blogging. */
 
 /** Absolute path to the WordPress directory. */

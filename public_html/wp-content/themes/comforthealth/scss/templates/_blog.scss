@@ -1,13 +1,40 @@
+.blog {
+	.banner .container {
+		height: 100%;
+		display: flex;
+		align-items: center;
+	}
+}
+
 .blog-page {
 	padding-top: 60px;
 	
-	.container {
-		height: 100%;
-	}
+	
 	
 	.all-posts {
 		padding: 3rem 0;
 		overflow: hidden;
+	}
+
+	.blog__header {
+		padding: 2rem;
+		font-size: 1.3rem;
+		
+		.blog__title {
+			text-transform: capitalize;
+			margin-bottom: .5rem;
+
+			a {
+				text-decoration: none;
+				color: #333;
+			}
+		}
+	}
+
+	.blog__author {
+		font-style: italic;
+		color: #666;
+		display: none;
 	}
 
 	.banner {
@@ -183,9 +210,11 @@
 
 .single-post .banner {
 	height: auto;
-	padding: 5rem 0;
+	padding: 5rem 0 7rem;
 	background: #fbfbfb;
 	border-bottom: 1px solid #dedede;
+
+	max-height: 400px;;
 	nav {
 		margin-bottom: 2rem;
 	}

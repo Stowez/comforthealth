@@ -125,12 +125,12 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 *
 	 * @since 4.3.0
 	 *
-	 * @param WP_Customize_Manager $manager Bootstrap Customizer instance.
-	 * @param string               $id      An specific ID of the setting. Can be a
-	 *                                      theme mod or option name.
-	 * @param array                $args    Optional. Setting arguments.
-	 *
 	 * @throws Exception If $id is not valid for this setting type.
+	 *
+	 * @param WP_Customize_Manager $manager Customizer bootstrap instance.
+	 * @param string               $id      A specific ID of the setting.
+	 *                                      Can be a theme mod or option name.
+	 * @param array                $args    Optional. Setting arguments.
 	 */
 	public function __construct( WP_Customize_Manager $manager, $id, array $args = array() ) {
 		if ( empty( $manager->nav_menus ) ) {
@@ -141,7 +141,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 			throw new Exception( "Illegal widget setting ID: $id" );
 		}
 
-		$this->term_id = intval( $matches['id'] );
+		$this->term_id = (int) $matches['id'];
 
 		parent::__construct( $manager, $id, $args );
 	}
@@ -156,7 +156,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 * @return array Instance data.
 	 */
 	public function value() {
-		if ( $this->is_previewed && $this->_previewed_blog_id === get_current_blog_id() ) {
+		if ( $this->is_previewed && get_current_blog_id() === $this->_previewed_blog_id ) {
 			$undefined  = new stdClass(); // Symbol.
 			$post_value = $this->post_value( $undefined );
 
@@ -179,7 +179,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 					$value['auto_add'] = false;
 
 					if ( isset( $nav_menu_options['auto_add'] ) && is_array( $nav_menu_options['auto_add'] ) ) {
-						$value['auto_add'] = in_array( $term->term_id, $nav_menu_options['auto_add'] );
+						$value['auto_add'] = in_array( $term->term_id, $nav_menu_options['auto_add'], true );
 					}
 				}
 			}
@@ -188,6 +188,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 				$value = $this->default;
 			}
 		}
+
 		return $value;
 	}
 
@@ -285,7 +286,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 				)
 			);
 		}
-		// @todo add support for $args['hide_empty'] === true
+		// @todo Add support for $args['hide_empty'] === true.
 
 		return $menus;
 	}
@@ -381,10 +382,10 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 * @since 4.3.0
 	 *
 	 * @param array $nav_menu_options Nav menu options including auto_add.
-	 * @return array (Kaybe) modified nav menu options.
+	 * @return array (Maybe) modified nav menu options.
 	 */
 	public function filter_nav_menu_options( $nav_menu_options ) {
-		if ( $this->_previewed_blog_id !== get_current_blog_id() ) {
+		if ( get_current_blog_id() !== $this->_previewed_blog_id ) {
 			return $nav_menu_options;
 		}
 
@@ -406,7 +407,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 *
 	 * @since 4.3.0
 	 *
-	 * @param array $value The value to sanitize.
+	 * @param array $value The menu value to sanitize.
 	 * @return array|false|null Null if an input isn't valid. False if it is marked for deletion.
 	 *                          Otherwise the sanitized value.
 	 */
@@ -432,7 +433,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 
 		$value['name']        = trim( esc_html( $value['name'] ) ); // This sanitization code is used in wp-admin/nav-menus.php.
 		$value['description'] = sanitize_text_field( $value['description'] );
-		$value['parent']      = max( 0, intval( $value['parent'] ) );
+		$value['parent']      = max( 0, (int) $value['parent'] );
 		$value['auto_add']    = ! empty( $value['auto_add'] );
 
 		if ( '' === $value['name'] ) {
@@ -465,6 +466,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 * To delete a menu, the client can send false as the value.
 	 *
 	 * @since 4.3.0
+	 * @since 7.0.0 Return type updated from null|void to bool for compatibility with base class.
 	 *
 	 * @see wp_update_nav_menu_object()
 	 *
@@ -477,11 +479,11 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 *     @type int    $parent      The id of the parent term. Default 0.
 	 *     @type bool   $auto_add    Whether pages will auto_add to this menu. Default false.
 	 * }
-	 * @return null|void
+	 * @return bool Whether updated.
 	 */
 	protected function update( $value ) {
 		if ( $this->is_updated ) {
-			return;
+			return ( 'error' !== $this->update_status );
 		}
 
 		$this->is_updated = true;
@@ -555,7 +557,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 				}
 
 				$post_value = $setting->post_value( null );
-				if ( ! is_null( $post_value ) && $this->previous_term_id === intval( $post_value ) ) {
+				if ( ! is_null( $post_value ) && (int) $post_value === $this->previous_term_id ) {
 					$this->manager->set_post_value( $setting->id, $this->term_id );
 					$setting->save();
 				}
@@ -569,7 +571,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 				}
 
 				$widget_instance = $nav_menu_widget_setting->post_value(); // Note that this calls WP_Customize_Widgets::sanitize_widget_instance().
-				if ( empty( $widget_instance['nav_menu'] ) || intval( $widget_instance['nav_menu'] ) !== $this->previous_term_id ) {
+				if ( empty( $widget_instance['nav_menu'] ) || (int) $widget_instance['nav_menu'] !== $this->previous_term_id ) {
 					continue;
 				}
 
@@ -581,6 +583,8 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 				$this->_widget_nav_menu_updates[ $nav_menu_widget_setting->id ] = $updated_widget_instance;
 			}
 		}
+
+		return ( 'error' !== $this->update_status );
 	}
 
 	/**
@@ -594,7 +598,7 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 	 * @param array $nav_menu_options Array as returned by get_option( 'nav_menu_options' ).
 	 * @param int   $menu_id          The term ID for the given menu.
 	 * @param bool  $auto_add         Whether to auto-add or not.
-	 * @return array (Maybe) modified nav_menu_otions array.
+	 * @return array (Maybe) modified nav_menu_options array.
 	 */
 	protected function filter_nav_menu_options_value( $nav_menu_options, $menu_id, $auto_add ) {
 		$nav_menu_options = (array) $nav_menu_options;
@@ -602,7 +606,8 @@ class WP_Customize_Nav_Menu_Setting extends WP_Customize_Setting {
 			$nav_menu_options['auto_add'] = array();
 		}
 
-		$i = array_search( $menu_id, $nav_menu_options['auto_add'] );
+		$i = array_search( $menu_id, $nav_menu_options['auto_add'], true );
+
 		if ( $auto_add && false === $i ) {
 			array_push( $nav_menu_options['auto_add'], $this->term_id );
 		} elseif ( ! $auto_add && false !== $i ) {

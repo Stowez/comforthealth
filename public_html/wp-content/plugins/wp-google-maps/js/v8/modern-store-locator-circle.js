@@ -17,9 +17,9 @@ jQuery(function($) {
 		var map;
 		
 		if(WPGMZA.isProVersion())
-			map = this.map = MYMAP[map_id].map;
+			map = this.map = WPGMZA.getMapByID(map_id);
 		else
-			map = this.map = MYMAP.map;
+			map = this.map = WPGMZA.maps[0];
 		
 		this.map_id = map_id;
 		this.mapElement = map.element;
@@ -33,7 +33,7 @@ jQuery(function($) {
 		this.settings = {
 			center: new WPGMZA.LatLng(0, 0),
 			radius: 1,
-			color: "#63AFF2",
+			color: "#ff0000",
 			
 			shadowColor: "white",
 			shadowBlur: 4,
@@ -73,11 +73,24 @@ jQuery(function($) {
 	 */
 	WPGMZA.ModernStoreLocatorCircle.createInstance = function(map, settings) {
 		
-		if(WPGMZA.settings.engine == "google-maps")
-			return new WPGMZA.GoogleModernStoreLocatorCircle(map, settings);
-		else
-			return new WPGMZA.OLModernStoreLocatorCircle(map, settings);
-		
+		switch(WPGMZA.settings.engine){
+			case 'google-maps':
+				return new WPGMZA.GoogleModernStoreLocatorCircle(map, settings);
+				break;
+			case 'leaflet':
+			case 'leaflet-azure':
+			case 'leaflet-stadia':
+			case 'leaflet-maptiler':
+			case 'leaflet-locationiq':
+			case 'leaflet-zerocost':
+				return new WPGMZA.LeafletModernStoreLocatorCircle(map, settings);
+				break;
+			case 'open-layers':
+			case 'open-layers-latest':
+			default:
+				return new WPGMZA.OLModernStoreLocatorCircle(map, settings);
+				break;
+		}
 	};
 	
 	/**
@@ -192,7 +205,6 @@ jQuery(function($) {
 	 * @throws Invalid radius
 	 */
 	WPGMZA.ModernStoreLocatorCircle.prototype.setRadius = function(radius) {
-		
 		if(isNaN(radius))
 			throw new Error("Invalid radius");
 		
@@ -262,7 +274,7 @@ jQuery(function($) {
 	WPGMZA.ModernStoreLocatorCircle.prototype.validateSettings = function()
 	{
 		if(!WPGMZA.isHexColorString(this.settings.color))
-			this.settings.color = "#63AFF2";
+			this.settings.color = "#ff0000";
 	}
 	
 	/**

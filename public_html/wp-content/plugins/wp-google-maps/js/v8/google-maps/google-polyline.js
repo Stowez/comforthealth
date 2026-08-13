@@ -2,60 +2,113 @@
  * @namespace WPGMZA
  * @module GooglePolyline
  * @requires WPGMZA.Polyline
+ * @pro-requires WPGMZA.ProPolyline
  */
 jQuery(function($) {
 	
-	WPGMZA.GooglePolyline = function(row, googlePolyline)
-	{
+	var Parent;
+
+	WPGMZA.GooglePolyline = function(options, googlePolyline) {
+
 		var self = this;
 		
-		WPGMZA.Polyline.call(this, row, googlePolyline);
+		Parent.call(this, options, googlePolyline);
 		
-		if(googlePolyline)
-		{
+		if(googlePolyline) {
 			this.googlePolyline = googlePolyline;
-		}
-		else
-		{
+		} else {
 			this.googlePolyline = new google.maps.Polyline(this.settings);			
-			this.googlePolyline.wpgmzaPolyline = this;
-			
-			if(row && row.points)
-			{
-				var path = this.parseGeometry(row.points);
-				this.setPoints(path);
-			}
 		}
 		
-		google.maps.event.addListener(this.googlePolyline, "click", function() {
-			self.dispatchEvent({type: "click"});
+
+		this.googleFeature = this.googlePolyline;
+		
+		if(options && options.polydata)
+		{
+
+			var path = this.parseGeometry(options.polydata);
+			this.googlePolyline.setPath(path);
+		}		
+		
+		this.googlePolyline.wpgmzaPolyline = this;
+		
+		if(options)
+			this.setOptions(options);
+		
+		google.maps.event.addListener(this.googlePolyline, "click", function(event) {
+			let coordinates = new WPGMZA.LatLng(event.latLng.lat(), event.latLng.lng());
+			self.dispatchEvent({type: "click", coordinates : coordinates});
 		});
 	}
+
+	if(WPGMZA.isProVersion())
+		Parent = WPGMZA.ProPolyline;
+	else
+		Parent = WPGMZA.Polyline;
 	
-	WPGMZA.GooglePolyline.prototype = Object.create(WPGMZA.Polyline.prototype);
+	WPGMZA.GooglePolyline.prototype = Object.create(Parent.prototype);
 	WPGMZA.GooglePolyline.prototype.constructor = WPGMZA.GooglePolyline;
 	
-	WPGMZA.GooglePolyline.prototype.setEditable = function(value)
-	{
-		this.googlePolyline.setOptions({editable: value});
+	WPGMZA.GooglePolyline.prototype.updateNativeFeature = function() {
+		this.googlePolyline.setOptions(WPGMZA.GoogleFeature.getGoogleStyle(this.getScalarProperties()));
 	}
 	
-	WPGMZA.GooglePolyline.prototype.setPoints = function(points)
-	{
-		this.googlePolyline.setOptions({path: points});
-	}
-	
-	WPGMZA.GooglePolyline.prototype.toJSON = function()
-	{
-		var result = WPGMZA.Polyline.prototype.toJSON.call(this);
+	WPGMZA.GooglePolyline.prototype.setEditable = function(value) {
+		var self = this;
 		
-		result.points = [];
+		this.googlePolyline.setOptions({editable: value});
+		
+		
+		
+		if (value) {
+			// TODO: Unbind these when value is false
+			var path = this.googlePolyline.getPath();
+			var events = [
+				"insert_at",
+				"remove_at",
+				"set_at"
+			];
+			
+			events.forEach(function(name) {
+				google.maps.event.addListener(path, name, function() {
+					self.trigger("change");
+				})
+			});
+			
+			// TODO: Add dragging and listen for dragend
+			google.maps.event.addListener(this.googlePolyline, "dragend", function(event) {
+				self.trigger("change");
+			});
+			
+			google.maps.event.addListener(this.googlePolyline, "click", function(event) {
+				if(!WPGMZA.altKeyDown)
+					return;
+				
+				var path = this.getPath();
+				path.removeAt(event.vertex);
+				self.trigger("change");
+				
+			});
+		}
+	}
+
+	WPGMZA.GooglePolyline.prototype.setVisible = function(visible) {
+		this.googlePolyline.setVisible(visible ? true : false);
+	}
+	
+	WPGMZA.GooglePolyline.prototype.setDraggable = function(value) {
+		this.googlePolyline.setOptions({draggable: value});
+	}
+	
+	WPGMZA.GooglePolyline.prototype.getGeometry = function() {
+
+		var result = [];
 		
 		var path = this.googlePolyline.getPath();
 		for(var i = 0; i < path.getLength(); i++)
 		{
 			var latLng = path.getAt(i);
-			result.points.push({
+			result.push({
 				lat: latLng.lat(),
 				lng: latLng.lng()
 			});

@@ -13,12 +13,19 @@ class GF_API_Keys_Table extends WP_List_Table {
 		return array( 'widefat', 'striped', 'feeds',  'api_key_table' );
 	}
 
+	/**
+	 * Returns an array of columns to be included in the list table.
+	 *
+	 * @since 2.4
+	 * @since 2.4.22 Removed the key column.
+	 *
+	 * @return array
+	 */
 	function get_columns() {
 
 		return array(
-			'description'  => esc_html__( 'Description', 'gravityforms' ),
-			'key'      => esc_html__( 'Key', 'gravityforms' ),
-			'user'         => esc_html__( 'User', 'gravityforms' ),
+			'description' => esc_html__( 'Description', 'gravityforms' ),
+			'user'        => esc_html__( 'User', 'gravityforms' ),
 			'permissions' => esc_html__( 'Permissions', 'gravityforms' ),
 			'last_access' => esc_html__( 'Last Access', 'gravityforms' ),
 		);
@@ -58,10 +65,10 @@ class GF_API_Keys_Table extends WP_List_Table {
 		$nonce_url = wp_nonce_url( '?page=gf_settings&subview=gravityformswebapi', 'gf_revoke_key' );
 
 		$actions = array(
-			'edit' => '<a href="' . $this->get_edit_url( $item['key_id'] ) . '">' . esc_html__( 'Edit', 'gravityforms' ) . '</a>',
+			'edit' => '<a href="#" class="rest-api-edit-key" data-id=" ' . esc_attr( $item['key_id'] ) . ' " >' . esc_html__( 'Edit', 'gravityforms' ) . '</a>',
 			'delete' => sprintf( '<a data-wp-lists="delete:the-list:key_row_%d::status=delete&action=delete_key&key=%d" onclick="%s" href="%s" class="submitdelete">Revoke</a>', absint( $item['key_id'] ), absint( $item['key_id'] ), $confirm, $nonce_url ),
 		);
-
+  
 		return $description . $this->row_actions( $actions );
 	}
 
@@ -84,9 +91,8 @@ class GF_API_Keys_Table extends WP_List_Table {
 	}
 
 	function no_items() {
-		echo '<div style="padding:10px;">' . sprintf( esc_html__( 'You don\'t have any API keys. Let\'s go %1$screate one%2$s!', 'gravityforms' ), '<a href="' . $this->get_edit_url( 0 ) . '">', '</a>' ) . '</div>';
+		echo '<div style="padding:10px;">' . esc_html__( 'You don\'t have any API keys. Let\'s add one by clicking the Add Key button below.', 'gravityforms' ) . '</div>';
 	}
-
 
 	/**
 	 * Display the table
@@ -100,7 +106,7 @@ class GF_API_Keys_Table extends WP_List_Table {
 		?>
 
 		<input type="hidden" name="single_action"/> <input type="hidden" name="action_args"/>
-		<table class="wp-list-table <?php echo implode( ' ', $this->get_table_classes() ); ?>">
+		<table class="wp-list-table <?php echo esc_attr( implode( ' ', $this->get_table_classes() ) ); ?>">
 			<thead>
 			<tr>
 				<?php $this->print_column_headers(); ?>
@@ -109,15 +115,13 @@ class GF_API_Keys_Table extends WP_List_Table {
 
 			<tbody id="the-list"<?php
 			if ( $singular ) {
-				echo " data-wp-lists='list:$singular'";
+				echo " data-wp-lists='list:$singular'"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			} ?>>
 			<?php $this->display_rows_or_placeholder(); ?>
 			</tbody>
 
 		</table>
-		<div>
-			<a class="button-secondary gfbutton gaddon-setting" id="add_setting_button" href="<?php echo $this->get_edit_url( 0 )?>">Add Key</a>
-		</div>
+        <button type="button" class="gform-button gform-button--white" id="rest-api-add-key" data-js="rest-api-add-key" style="margin-top: 10px"><?php echo esc_html__( 'Add Key', 'gravityforms' ) ?></button>
 		<?php
 
 	}
@@ -130,7 +134,7 @@ class GF_API_Keys_Table extends WP_List_Table {
 	 * @param object $item The current item
 	 */
 	public function single_row( $item ) {
-		echo "<tr id='key_row_{$item['key_id']}' >";
+		echo "<tr id='key_row_{$item['key_id']}' >"; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 		$this->single_row_columns( $item );
 		echo '</tr>';
 	}
@@ -152,8 +156,20 @@ class GF_API_Keys_Table extends WP_List_Table {
 
 			jQuery(document).ready(function () {
 
-				jQuery("#the-list").wpList();
+				const list = jQuery("#the-list");
+				list.wpList();
 
+				// PHP cannot detect the changes and with this we inspect the current DOM and insert the no-items message immediately without refreshing the page.
+				const noItemsHTML = <?php echo json_encode('<tr class="no-items alternate"><td class="colspanchange" colspan="4"><div style="padding:10px;">' . esc_html__( "You don't have any API keys. Let's add one by clicking the Add Key button below.", "gravityforms" ) . '</div></td></tr>'); ?>;
+				list.on( 'wpListDelEnd', function () {
+					const table = list[0]
+					const rows = table.querySelectorAll('tr')
+					const allRowsHidden = Array.from( rows ).every( row => getComputedStyle( row ).display === 'none' );
+                    
+					if ( allRowsHidden && !table.querySelector( '.no-items' ) ) {
+						list.html( noItemsHTML );
+					}
+				} )
 			});
 
 		</script>

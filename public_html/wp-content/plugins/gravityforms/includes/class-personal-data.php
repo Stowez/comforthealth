@@ -1,8 +1,8 @@
 <?php
 
-if ( ! class_exists( 'GFForms' ) ) {
-	die();
-}
+use Gravity_Forms\Gravity_Forms\Settings\Settings;
+
+class_exists( 'GFForms' ) || die();
 
 /**
  * Handles Integration with the WordPress personal data export and erase tools.
@@ -12,6 +12,15 @@ if ( ! class_exists( 'GFForms' ) ) {
  * Class GF_Personal_Data
  */
 class GF_Personal_Data {
+
+	/**
+	 * Maximum number of forms per GF_Query to stay within MariaDB's join limit.
+	 *
+	 * @since 2.10.5
+	 *
+	 * @var int
+	 */
+	const MAX_FORMS_PER_QUERY = 59;
 
 	/**
 	 * The cached form array.
@@ -32,6 +41,15 @@ class GF_Personal_Data {
 	private static $_forms;
 
 	/**
+	 * Stores the current instance of the Settings renderer.
+	 *
+	 * @since 2.5
+	 *
+	 * @var false|Settings
+	 */
+	private static $_settings_renderer = false;
+
+	/**
 	 * Renders the form settings.
 	 *
 	 * @since 2.4
@@ -40,437 +58,461 @@ class GF_Personal_Data {
 	 */
 	public static function form_settings( $form_id ) {
 
+		if ( ! self::get_settings_renderer() ) {
+			self::initialize_settings_renderer();
+		}
+
+		self::get_settings_renderer()->render();
+
+	}
+
+	/**
+	 * Get Personal Data settings fields.
+	 *
+	 * @since 2.5
+	 *
+	 * @param int $form_id The current Form ID.
+	 *
+	 * @return array
+	 */
+	private static function settings_fields( $form_id ) {
+
+		// Get form object.
 		$form = self::get_form( $form_id );
 
-		$form_personal_data_settings = rgar( $form, 'personalData' );
+		// Get Identification Field choices.
+		$identification_field_choices = self::get_identification_fields_choices( $form );
 
-		$action_url = admin_url( sprintf( 'admin.php?page=gf_edit_forms&view=settings&subview=personal-data&id=%d', $form_id ) );
+		return array(
+			array(
+				'class'  => 'gform-settings-panel--full',
+				'title'  => esc_html__( 'General Settings', 'gravityforms' ),
+				'fields' => array(
+					array(
+						'name'    => 'preventIP',
+						'type'    => 'toggle',
+						'label'   => esc_html__( 'Prevent the storage of IP addresses during form submission', 'gravityforms' ),
+						'tooltip' => gform_tooltip( 'personal_data_prevent_ip', null, true ),
+					),
+					array(
+						'name'          => 'retention[policy]',
+						'type'          => 'radio',
+						'label'         => esc_html__( 'Retention Policy', 'gravityforms' ),
+						'tooltip'       => gform_tooltip( 'personal_data_retention_policy', null, true ),
+						'default_value' => 'retain',
+						'choices'       => array(
+							array(
+								'label' => esc_html__( 'Retain entries indefinitely', 'gravityforms' ),
+								'value' => 'retain',
+							),
+							array(
+								'label'   => esc_html__( 'Trash entries automatically', 'gravityforms' ),
+								'value'   => 'trash',
+								'onclick' => sprintf(
+									'alert( %s );',
+									json_encode( __( 'Warning: this will affect all entries that are older than the number of days specified.', 'gravityforms' ) )
+								),
+							),
+							array(
+								'label'   => esc_html__( 'Delete entries permanently automatically', 'gravityforms' ),
+								'value'   => 'delete',
+								'onclick' => sprintf(
+									'alert( %s );',
+									json_encode( __( 'Warning: this will affect all entries that are older than the number of days specified.', 'gravityforms' ) )
+								),
+							),
+						),
+					),
+					array(
+						'name'                => 'retention[retain_entries_days]',
+						'label'               => esc_html__( 'Number of days to retain entries before trashing/deleting:', 'gravityforms' ),
+						'type'                => 'text',
+						'input_type'          => 'number',
+						'default_value'       => 1,
+						'dependency'          => array(
+							'live'   => true,
+							'fields' => array(
+								array(
+									'field'  => 'retention[policy]',
+									'values' => array( 'trash', 'delete' ),
+								),
+							),
+						),
+						'validation_callback' => function( $field, $value ) {
 
-		$enabled = (bool) rgars( $form_personal_data_settings, 'exportingAndErasing/enabled' );
+							// If value is not numeric or less than one day, set error.
+							if ( ! is_numeric( $value ) || ( is_numeric( $value ) && floatval( $value ) < 1 ) ) { // nosemgrep audit.php.lang.misc.flawed-logic-numeric
+								$field->set_error( esc_html__( 'Form entries must be retained for at least one day.', 'gravityforms' ) );
+							}
 
-		$prevent_ip = (bool) rgar( $form_personal_data_settings, 'preventIP' );
+						},
+					),
+				),
+			),
+			array(
+				'class'  => 'gform-settings-panel--full',
+				'title'  => esc_html__( 'Exporting and Erasing Data', 'gravityforms' ),
+				'fields' => array(
+					array(
+						'name'        => 'exportingAndErasing[enabled]',
+						'type'        => 'toggle',
+						'label'       => esc_html__( 'Enable integration with the WordPress tools for exporting and erasing personal data.', 'gravityforms' ),
+						'tooltip'     => gform_tooltip( 'personal_data_enable', null, true ),
+						'disabled'    => empty( $identification_field_choices ),
+						'description' => empty( $identification_field_choices )
+        				? sprintf(
+    						'<div class="alert-container">
+        						<div class="gform-alert gform-alert--notice gform-alert--theme-primary">
+            					<span class="gravity-component-icon gravity-component-icon--circle-notice-fine gform-alert__icon" aria-hidden="true"></span>
+            						<div class="gform-alert__message-wrap">
+                						<p class="gform-text gform-text--color-port gform-typography--size-text-md gform-typography--weight-regular gform-alert__message">%s</p>
+            						</div>
+        						</div>
+    						</div>',
+    						esc_html__( 'You must add an email address field to the form in order to enable this setting.', 'gravityforms' )
+						)
+						: '',
+					),
+					array(
+						'name'       => 'exportingAndErasing[identificationField]',
+						'type'       => 'select',
+						'label'      => esc_html__( 'Identification Field', 'gravityforms' ),
+						'tooltip'    => gform_tooltip( 'personal_data_identification', null, true ),
+						'choices'    => $identification_field_choices,
+						'dependency' => array(
+							'live'   => true,
+							'fields' => array(
+								array(
+									'field' => 'exportingAndErasing[enabled]',
+								),
+							),
+						),
+					),
+					array(
+						'name'       => 'exportingAndErasing[columns]',
+						'type'       => 'columns',
+						'label'      => esc_html__( 'Personal Data', 'gravityforms' ),
+						'tooltip'    => gform_tooltip( 'personal_data_field_settings', null, true ),
+						'callback'   => array( 'GF_Personal_Data', 'settings_columns' ),
+						'dependency' => array(
+							'live'   => true,
+							'fields' => array(
+								array(
+									'field' => 'exportingAndErasing[enabled]',
+								),
+							),
+						),
+					),
+				),
+			),
+		);
 
-		$retention_policy = rgars( $form_personal_data_settings, 'retention/policy' );
+	}
 
-		if ( empty( $retention_policy ) ) {
-			$retention_policy = 'retain';
+	/**
+	 * Get identification fields as choices.
+	 *
+	 * @since 2.5
+	 *
+	 * @param array $form Form object.
+	 *
+	 * @return array
+	 */
+	private static function get_identification_fields_choices( $form = array() ) {
+
+		static $choices;
+
+		// If choices have already been defined, return.
+		if ( isset( $choices ) ) {
+			return $choices;
 		}
 
-		$retention_days = rgars( $form_personal_data_settings, 'retention/retain_entries_days' );
+		// Initialize choices.
+		$choices = array();
 
-		if ( empty( $retention_days ) ) {
-			$retention_days = 1;
+		// Get Email fields.
+		$email_fields = GFAPI::get_fields_by_type( $form, 'email' );
+
+		// Add Email fields as choices.
+		foreach ( $email_fields as $email_field ) {
+			$choices[ (string) $email_field->id ] = $email_field->label;
 		}
 
-		?>
-		<h3><span><i class="fa fa-lock"></i> <?php esc_html_e( 'Personal Data', 'gravityforms' ); ?>
-		</h3>
-		<div class="gform_panel gform_panel_form_settings" id="gf_personal_data_settings">
-			<form action="<?php esc_url( $action_url ); ?>" method="POST">
-				<?php wp_nonce_field( 'gravityforms_personal_data' ); ?>
-				<table class="gforms_form_settings" cellspacing="0" cellpadding="0">
+		/**
+		 * Allows the list of personal data identification field choices to be modified. Fields values
+		 * will be treated as user IDs.
+		 *
+		 * For example, add the created_by field by returning:
+		 * $identification_field_choices['created_by'] = 'Created By';
+		 *
+		 * @since 2.4
+		 *
+		 * @param array $identification_field_choices An associative array with the field id as the key and the value as the label.
+		 * @param array $form                         The current form.
+		 */
+		$choices = gf_apply_filters( array(
+			'gform_personal_data_identification_fields',
+			$form['id'],
+		), $choices, $form );
+
+		// Update choices formatting.
+		array_walk( $choices, function( &$label, $value ) {
+			$label = array( 'label' => $label, 'value' => $value );
+		} );
+
+		// If choices exist, return.
+		if ( ! empty( $choices ) ) {
+			return $choices;
+		}
+
+		// Get current identification field value.
+		$current_value = rgars( $form, 'personalData/exportingAndErasing/identificationField' );
+
+		// Add look up choice.
+		if ( $current_value === 'created_by' ) {
+
+			$choices[] = array(
+				'label' => esc_html__( 'Created By', 'gravityforms' ),
+				'value' => 'created_by',
+			);
+
+		} else if ( $selected_field = GFAPI::get_field( $form, $current_value ) ) {
+
+			// Set admin label context.
+			$selected_field->set_context_property( 'use_admin_label', true );
+
+			$choices[] = array(
+				'label' => GFFormsModel::get_label( $selected_field ),
+				'value' => $current_value,
+			);
+
+		}
+
+		return $choices;
+
+	}
+
+	/**
+	 * Renders a Personal Data columns table field.
+	 *
+	 * @since 2.5
+	 *
+	 * @param array $props Field properties.
+	 * @param bool  $echo  Output the field markup directly.
+	 *
+	 * @return string
+	 */
+	public static function settings_columns( $props = array(), $echo = true ) {
+
+		// Get form object.
+		$form_id = absint( rgget( 'id' ) );
+		$form    = self::get_form( $form_id );
+
+		// Open table.
+		$html = sprintf(
+			'<table id="gf_personal_data_field_settings" class="form-table">
+				<thead>
 					<tr>
-						<td colspan="2">
-							<h4 class="gf_settings_subgroup_title"><?php esc_html_e( 'General Settings', 'gravityforms' ); ?></h4>
-						</td>
+						<th class="gf_personal_data_field_label_title">%s</th>
+						<th class="gf_personal_data_cb_title">%s</th>
+						<th class="gf_personal_data_cb_title">%s</th>
 					</tr>
-					<tr>
-						<th>
-							<?php esc_html_e( 'IP Addresses', 'gravityforms' ); ?>
-							<?php gform_tooltip( 'personal_data_prevent_ip' ); ?>
-						</th>
-						<td>
-							<label for="gf_personal_data_prevent_ip">
-								<input
-									id="gf_personal_data_prevent_ip"
-									type="checkbox"
-									name="prevent_ip"
-									<?php checked( true, $prevent_ip ); ?>
-								/>
-								<?php esc_html_e( 'Prevent the storage of IP addresses during form submission.', 'gravityforms' ); ?>
-							</label>
-						</td>
-					</tr>
-					<tr>
-						<th>
-							<?php esc_html_e( 'Retention Policy', 'gravityforms' ); ?>
-							<?php gform_tooltip( 'personal_data_retention_policy' ); ?>
-						</th>
-						<td>
-							<label for="gf_personal_data_retention_do_not_delete">
-								<input
-									id="gf_personal_data_retention_do_not_delete"
-									type="radio"
-									name="retention"
-									value="retain"
-									<?php checked( 'retain', $retention_policy ); ?>
-								/>
-								<?php esc_html_e( 'Retain entries indefinitely', 'gravityforms' ); ?>
-							</label>
-							<br/>
-							<label for="gf_personal_data_retention_trash">
-								<input
-									id="gf_personal_data_retention_trash"
-									type="radio"
-									name="retention"
-									value="trash"
-									<?php checked( 'trash', $retention_policy ); ?>
-								/>
-								<?php esc_html_e( 'Trash entries automatically', 'gravityforms' ); ?>
-							</label>
-							<br/>
-							<label for="gf_personal_data_retention_delete">
-								<input
-									id="gf_personal_data_retention_delete"
-									type="radio"
-									name="retention"
-									value="delete"
-									<?php checked( 'delete', $retention_policy ); ?>
-								/>
-								<?php esc_html_e( 'Delete entries permanently automatically', 'gravityforms' ); ?>
-							</label>
-							<div id="gf_personal_data_retain_entries_days_container" style="<?php echo( $retention_policy !== 'retain' ? '' : 'display:none' ) ?>">
-								<label for="gf_personal_data_retain_entries_days_container">
-									<?php esc_html_e( 'Number of days to retain entries before trashing/deleting:', 'gravityforms' ); ?>
-									<input
-										id="gf_personal_data_retain_entries_days"
-										type="text"
-										class="small-text"
-										name="retain_entries_days"
-										value="<?php echo absint( $retention_days ); ?>"
-									/>
-								</label>
-							</div>
-						</td>
-					</tr>
-					<tr>
-						<td colspan="2">
-							<h4 class="gf_settings_subgroup_title"><?php esc_html_e( 'Exporting and Erasing Data', 'gravityforms' ); ?></h4>
-						</td>
-					</tr>
-					<?php
-					$identification_field_choices = array();
+				</thead>
+				<tbody>',
+			esc_html__( 'Fields', 'gravityforms' ),
+			esc_html__( 'Export', 'gravityforms' ),
+			esc_html__( 'Erase', 'gravityforms' )
+		);
 
-					$email_fields = GFAPI::get_fields_by_type( $form, 'email' );
+		// Add Select/Deselect All row.
+		$html .= sprintf(
+		'<tr>
+				<td>%s</td>
+				<td class="gf_personal_data_cb_cell">
+					<div class="gform-settings-choice">
+						<input id="gf_personal_data_export_all" type="checkbox" />
+					</div>
+				</td>
+				<td class="gf_personal_data_cb_cell">
+					<div class="gform-settings-choice">
+						<input id="gf_personal_data_erase_all" type="checkbox" />
+					</div>
+				</td>
+			</tr>',
+			esc_html__( 'Select/Deselect All', 'gravityforms' )
+		);
 
-					foreach ( $email_fields as $email_field ) {
-						$identification_field_choices[ (string) $email_field->id ] = $email_field->label;
-					}
+		// Initialize Personal Data fields array.
+		$pd_fields = array();
 
-					/**
-					* Allows the list of personal data identification field choices to be modified. Fields values
-					* will be treated as user IDs.
-					*
-					* For example, add the created_by field by returning:
-					* $identification_field_choices['created_by'] = 'Created By';
-					*
-					* @since 2.4
-					*
-					* @param array $identification_field_choices An associative array with the field id as the key and the value as the label.
-					* @param array $form                         The current form.
-					*/
-					$identification_field_choices = gf_apply_filters( array( 'gform_personal_data_identification_fields', $form['id'] ), $identification_field_choices, $form );
+		// Loop through columns, add to Personal Data fields array.
+		foreach ( self::get_columns() as $key => $label ) {
+			$column_settings = rgars( $form, 'personalData/exportingAndErasing/columns/' . $key );
+			$pd_fields[]     = array(
+				'key'            => $key,
+				'label'          => $label,
+				'default_values' => array(
+					'export' => rgar( $column_settings, 'export' ),
+					'erase'  => rgar( $column_settings, 'erase' ),
+				),
+			);
+		}
 
-					$no_id = empty( $identification_field_choices );
+		/**
+		 * Loop through form fields, add to Personal Data fields array.
+		 *
+		 * @var GF_Field $field
+		 */
+		foreach ( $form['fields'] as $field ) {
 
-					$lookup_field = rgars( $form, 'personalData/exportingAndErasing/identificationField' );
+			// Skip display only fields.
+			if ( $field->displayOnly ) {
+				continue;
+			}
 
-					if ( $no_id ) {
-						if ( $lookup_field == 'created_by' ) {
+			// Set label context.
+			$field->set_context_property( 'use_admin_label', true );
 
-							$no_id = false;
+			// Add to Personal Data fields.
+			$pd_fields[] = array(
+				'key'            => absint( $field->id ),
+				'label'          => GFFormsModel::get_label( $field ),
+				'default_values' => array(
+					'export' => $field->personalDataExport,
+					'erase'  => $field->personalDataErase,
+				),
+			);
 
-							$identification_field_choices = array(
-								'created_by' => __( 'Created By', 'gravityforms' ),
-							);
+		}
 
-						} elseif ( $selected_field = GFFormsModel::get_field( $form, $lookup_field ) ) {
+		// Render Personal Data fields.
+		foreach ( $pd_fields as $pd_field ) {
 
-							$no_id = false;
+			$export_field = $erase_field = null;
 
-							$selected_field->set_context_property( 'use_admin_label', true );
+			// Prepare export checkbox.
+			$export_field = \Gravity_Forms\Gravity_Forms\Settings\Fields::create(
+				array(
+					'name'    => sprintf( 'export_fields[%s]', esc_attr( $pd_field['key'] ) ),
+					'type'    => 'checkbox',
+					'choices' => array(
+						array(
+							'class'         => 'gf_personal_data_cb_export',
+							'name'          => sprintf( 'export_fields[%s]', esc_attr( $pd_field['key'] ) ),
+							'default_value' => $pd_field['default_values']['export'],
+						),
+					),
+				),
+				self::get_settings_renderer()
+			);
 
-							$choice_label = GFFormsModel::get_label( $selected_field );
+			// Prepare erase checkbox.
+			$erase_field = \Gravity_Forms\Gravity_Forms\Settings\Fields::create(
+				array(
+					'name'    => sprintf( 'erase_fields[%s]', esc_attr( $pd_field['key'] ) ),
+					'type'    => 'checkbox',
+					'choices' => array(
+						array(
+							'class'         => 'gf_personal_data_cb_erase',
+							'name'          => sprintf( 'erase_fields[%s]', esc_attr( $pd_field['key'] ) ),
+							'default_value' => $pd_field['default_values']['erase'],
+						),
+					),
+				),
+				self::get_settings_renderer()
+			);
 
-							$identification_field_choices = array(
-								$lookup_field => $choice_label,
-							);
+			// Render field.
+			$html .= sprintf(
+				'<tr>
+					<td>%s</td>
+					<td class="gf_personal_data_cb_cell">%s</td>
+					<td class="gf_personal_data_cb_cell">%s</td>
+				</tr>',
+				esc_html( $pd_field['label'] ),
+				$export_field->markup(),
+				$erase_field->markup()
+			);
 
-						} else {
-							$enabled = false;
-						}
-					}
-					?>
-					<tr>
-						<th>
-							<?php esc_html_e( 'Enable', 'gravityforms' ); ?>
-							<?php gform_tooltip( 'personal_data_enable' ); ?>
-						</th>
-						<td>
-							<label for="gf_personal_data_enable">
-								<input
-									id="gf_personal_data_enable"
-									type="checkbox"
-									name="exporting_and_erasing_enabled"
-									<?php checked( true, $enabled ); ?>
-									<?php disabled( true, $no_id ); ?>
-								/>
-								<?php esc_html_e( 'Enable integration with the WordPress tools for exporting and erasing personal data.', 'gravityforms' ); ?>
-							</label>
-						</td>
-					</tr>
-					<?php
+		}
 
-					if ( ! $no_id ) {
-						?>
-						<tr class="gf_personal_data_settings" style="<?php echo( $enabled ? '' : 'display:none;' ); ?>">
-							<th>
-								<?php esc_html_e( 'Identification Field', 'gravityforms' ); ?>
-								<?php gform_tooltip( 'personal_data_identification' ); ?>
-							</th>
-							<td>
-								<select name="identification_field">
-									<?php
-									echo sprintf( '<option value="">%s</option>', esc_html__( 'Select a Field', 'gravityforms' ) );
-									foreach ( $identification_field_choices as $id => $label ) {
-										$selected = selected( $id, $lookup_field, false );
-										echo sprintf( '<option %s value="%s">%s</option>', $selected, $id, $label );
-									}
-									?>
-								</select>
-							</td>
-						</tr>
+		// Get custom items.
+		$custom_items = self::get_custom_items( $form );
 
-						<tr class="gf_personal_data_settings" style="<?php echo( $enabled ? '' : 'display:none;' ); ?>">
-						<th>
-							<?php esc_html_e( 'Personal Data', 'gravityforms' ); ?>
-							<?php gform_tooltip( 'personal_data_field_settings' ); ?>
+		// Display custom items.
+		if ( ! empty( $custom_items ) ) {
 
-						</th>
-						<td>
-							<table id="gf_personal_data_field_settings">
-								<thead>
-								<tr>
-									<th class="gf_personal_data_field_label_title"><?php esc_html_e( 'Fields', 'gravityforms' ); ?></th>
-									<th class="gf_personal_data_cb_title"><?php esc_html_e( 'Export', 'gravityforms' ); ?></th>
-									<th class="gf_personal_data_cb_title"><?php esc_html_e( 'Erase', 'gravityforms' ); ?></th>
-								</tr>
-								</thead>
-								<tbody>
-								<tr>
-									<td>
-										<?php esc_html_e( 'Select/Deselect All', 'gravityforms' ); ?>
-									</td>
-									<td class="gf_personal_data_cb_cell">
-										<input
-											id="gf_personal_data_export_all"
-											type="checkbox"
-										/>
-									</td>
-									<td class="gf_personal_data_cb_cell">
-										<input
-											id="gf_personal_data_erase_all"
-											type="checkbox"
-										/>
-									</td>
-								</tr>
-								<?php
+			// Add Other Data heading.
+			$html .= sprintf(
+				'<tr><th class="gf_personal_data_field_label_title" colspan="3">%s</th></tr>',
+				esc_html__( 'Other Data', 'gravityforms' )
+			);
 
-								$columns = self::get_columns();
+			// Loop through custom items, render.
+			foreach ( $custom_items as $key => $custom_item_details ) {
 
-								$all_column_settings = rgars( $form_personal_data_settings, 'exportingAndErasing/columns' );
+				$export_field = $erase_field = null;
 
-								foreach ( $columns as $key => $label ) {
-									$column_settings = rgar( $all_column_settings, $key );
-									?>
-									<tr>
-										<td>
-											<?php echo esc_html( $label ); ?>
-										</td>
-										<td class="gf_personal_data_cb_cell">
-											<input
-												class="gf_personal_data_cb_export"
-												type="checkbox"
-												name="export_fields[<?php echo esc_attr( $key ); ?>]"
-												<?php checked( true, (bool) rgar( $column_settings, 'export' ) ); ?>
-											/>
-										</td>
-										<td class="gf_personal_data_cb_cell">
-											<input
-												class="gf_personal_data_cb_erase"
-												type="checkbox"
-												name="erase_fields[<?php echo esc_attr( $key ); ?>]"
-												<?php checked( true, (bool) rgar( $column_settings, 'erase' ) ); ?>
-											/>
-										</td>
-									</tr>
-									<?php
-								}
+				// Get custom items settings.
+				$custom_settings = rgars( $form, 'personalData/exportingAndErasing/custom/' . $key );
 
-								/* @var GF_Field[] $fields */
-								$fields = $form['fields'];
+				// Prepare export checkbox.
+				if ( isset( $custom_item_details['exporter_callback'] ) && is_callable( $custom_item_details['exporter_callback'] ) ) {
+					$export_field = \Gravity_Forms\Gravity_Forms\Settings\Fields::create(
+						array(
+							'name'    => sprintf( 'export_fields[%s]', esc_attr( $key ) ),
+							'type'    => 'checkbox',
+							'choices' => array(
+								array(
+									'class'         => 'gf_personal_data_cb_export',
+									'name'          => sprintf( 'export_fields[%s]', esc_attr( $key ) ),
+									'default_value' => rgar( $custom_settings, 'export' ),
+								),
+							),
+						),
+						self::get_settings_renderer()
+					);
+				}
 
-								foreach ( $fields as $field ) {
+				// Prepare erase checkbox.
+				if ( isset( $custom_item_details['eraser_callback'] ) && is_callable( $custom_item_details['eraser_callback'] ) ) {
+					$erase_field = \Gravity_Forms\Gravity_Forms\Settings\Fields::create(
+						array(
+							'name'    => sprintf( 'erase_fields[%s]', esc_attr( $key ) ),
+							'type'    => 'checkbox',
+							'choices' => array(
+								array(
+									'class'         => 'gf_personal_data_cb_erase',
+									'name'          => sprintf( 'erase_fields[%s]', esc_attr( $key ) ),
+									'default_value' => rgar( $custom_settings, 'erase' ),
+								),
+							),
+						),
+						self::get_settings_renderer()
+					);
+				}
 
-									if ( $field->displayOnly ) {
-										// Skip display-only fields such as HTML, Section and Page fields.
-										continue;
-									}
+				// Render field.
+				$html .= sprintf(
+					'<tr>
+						<td>%s</td>
+						<td class="gf_personal_data_cb_cell">%s</td>
+						<td class="gf_personal_data_cb_cell">%s</td>
+					</tr>',
+					esc_html( rgar( $custom_item_details, 'label' ) ),
+					$export_field ? $export_field->markup() : null,
+					$erase_field ? $erase_field->markup() : null
+				);
 
-									$field->set_context_property( 'use_admin_label', true );
+			}
 
-									?>
-									<tr>
-										<td>
-											<?php echo esc_html( GFFormsModel::get_label( $field ) ); ?>
-										</td>
-										<td class="gf_personal_data_cb_cell">
-											<input
-												class="gf_personal_data_cb_export"
-												type="checkbox"
-												name="export_fields[<?php echo absint( $field->id ); ?>]"
-												<?php checked( true, (bool) $field->personalDataExport ); ?>
-											/>
-										</td>
-										<td class="gf_personal_data_cb_cell">
-											<input
-												class="gf_personal_data_cb_erase"
-												type="checkbox"
-												name="erase_fields[<?php echo absint( $field->id ); ?>]"
-												<?php checked( true, (bool) $field->personalDataErase ); ?>
-											/>
-										</td>
-									</tr>
-									<?php
-								}
+		}
 
-								$custom_items = self::get_custom_items( $form );
+		// Close table.
+		$html .= '</tbody></table>';
 
-								if ( ! empty( $custom_items ) ) {
+		return $html;
 
-									?>
-									<tr>
-										<th class="gf_personal_data_field_label_title" colspan="3">
-											<?php esc_html_e( 'Other Data', 'gravityforms' ) ?>
-										</th>
-									</tr>
-									<?php
-
-									$custom_items_settings = rgars( $form_personal_data_settings, 'exportingAndErasing/custom' );
-
-									foreach ( $custom_items as $key => $custom_item_details ) {
-										$custom_settings = rgar( $custom_items_settings, $key );
-										$label           = rgar( $custom_item_details, 'label' );
-										?>
-										<tr>
-											<td>
-												<?php echo esc_html( $label ); ?>
-											</td>
-											<td class="gf_personal_data_cb_cell">
-												<?php
-												if ( isset( $custom_item_details['exporter_callback'] ) && is_callable( $custom_item_details['exporter_callback'] ) ) {
-													?>
-													<input
-														class="gf_personal_data_cb_export"
-														type="checkbox"
-														name="export_fields[<?php echo esc_attr( $key ); ?>]"
-														<?php checked( true, (bool) rgar( $custom_settings, 'export' ) ); ?>
-													/>
-													<?php
-												}
-												?>
-											</td>
-											<td class="gf_personal_data_cb_cell">
-												<?php
-												if ( isset( $custom_item_details['eraser_callback'] ) && is_callable( $custom_item_details['eraser_callback'] ) ) {
-													?>
-													<input
-														class="gf_personal_data_cb_erase"
-														type="checkbox"
-														name="erase_fields[<?php echo esc_attr( $key ); ?>]"
-														<?php checked( true, (bool) rgar( $custom_settings, 'erase' ) ); ?>
-													/>
-													<?php
-												}
-												?>
-											</td>
-										</tr>
-										<?php
-									}
-								}
-
-								?>
-								</tbody>
-							</table>
-						</td>
-					</tr>
-
-						<?php
-					} else {
-						?>
-						<tr>
-							<th></th>
-							<td>
-								<div class="alert_red" style="padding:15px;">
-									<?php esc_html_e( 'You must add an email address field to the form in order to enable this setting.', 'gravityforms' ); ?>
-								</div>
-							</td>
-						</tr>
-						<?php
-					}
-					?>
-
-				</table>
-				<input
-					class="button-primary"
-					type="submit"
-					name="save_personal_data_settings"
-					value="<?php esc_attr_e( 'Save', 'gravityforms' ); ?>"
-				/>
-			</form>
-		</div>
-		<script>
-			jQuery(document).ready(function ($) {
-				$('#gf_personal_data_enable').change(function () {
-					if ($(this).is(":checked")) {
-						$('.gf_personal_data_settings').show();
-					} else {
-						$('.gf_personal_data_settings').hide();
-					}
-				});
-				$('#gf_personal_data_export_all').change(function () {
-					if ($(this).is(":checked")) {
-						$('.gf_personal_data_cb_export').prop('checked', true);
-					} else {
-						$('.gf_personal_data_cb_export').prop('checked', false);
-					}
-				});
-				$('#gf_personal_data_erase_all').change(function () {
-					if ($(this).is(":checked")) {
-						$('.gf_personal_data_cb_erase').prop('checked', true);
-					} else {
-						$('.gf_personal_data_cb_erase').prop('checked', false);
-					}
-				});
-				$("input[name='lookup']").change(function () {
-					if ($(this).val() == 'identifying_email_field') {
-						$('#gf_personal_data_email_field_select').fadeIn();
-					} else {
-						$('#gf_personal_data_email_field_select').hide();
-					}
-				});
-				$("input[name='retention']").change(function () {
-					if ($(this).val() == 'retain') {
-						$('#gf_personal_data_retain_entries_days_container').hide();
-					} else {
-						alert( <?php echo json_encode( __( 'Warning: this will affect all entries that are older than the number of days specified.', 'gravityforms' ) ) ?> );
-						$('#gf_personal_data_retain_entries_days_container').fadeIn();
-					}
-				});
-
-			});
-		</script>
-		<?php
 	}
 
 	/**
@@ -478,120 +520,158 @@ class GF_Personal_Data {
 	 *
 	 * @since 2.4
 	 *
-	 * @param $form_id
+	 * @param array $values Submitted settings values.
 	 */
-	public static function process_form_settings( $form_id ) {
-		check_admin_referer( 'gravityforms_personal_data' );
+	public static function process_form_settings( $values ) {
 
-		$form = self::get_form( $form_id );
+		// Get form object.
+		$form = self::get_form( rgget( 'form_id' ) );
 
-		$posted_export_fields = rgpost( 'export_fields' );
+		// Prevent IP address storage.
+		$form['personalData']['preventIP'] = (bool) rgar( $values, 'preventIP' );
 
-		$posted_erase_fields = rgpost( 'erase_fields' );
+		// Retention Policy
+		$form['personalData']['retention'] = rgar( $values, 'retention' );
 
-		$columns = self::get_columns();
+		// Exporting and Erasing
+		$form['personalData']['exportingAndErasing']['enabled']             = (bool) rgars( $values, 'exportingAndErasing/enabled' );
+		$form['personalData']['exportingAndErasing']['identificationField'] = sanitize_key( rgars( $values, 'exportingAndErasing/identificationField' ) );
 
-		if ( ! isset( $form['personalData'] ) ) {
-			$form['personalData'] = array();
+		// Exporting and Erasing: Columns
+		foreach ( self::get_columns() as $column => $label ) {
+			$form['personalData']['exportingAndErasing']['columns'][ $column ] = array(
+				'export' => (bool) rgars( $values, 'export_fields/' . $column ),
+				'erase'  => (bool) rgars( $values, 'erase_fields/' . $column ),
+			);
 		}
 
-		$form_personal_data_settings = $form['personalData'];
-
-		$form_personal_data_settings['preventIP'] = (bool) rgpost( 'prevent_ip' );
-
-		$retention_policy = rgpost( 'retention' );
-
-		// Whitelist the policy
-		$retention_policy = in_array( $retention_policy, array(
-			'retain',
-			'trash',
-			'delete',
-		) ) ? $retention_policy : 'retain';
-
-		$retain_entries_days = absint( rgpost( 'retain_entries_days' ) );
-
-		if ( empty( $retain_entries_days ) ) {
-			// Minimum to ensure the cron task doesn't delete the entry before all processing is complete.
-			$retain_entries_days = 1;
+		/**
+		 * Exporting and Erasing: Fields
+		 *
+		 * @var GF_Field $field
+		 */
+		foreach ( $form['fields'] as $f => $field ) {
+			$form['fields'][ $f ]->personalDataExport = (bool) rgars( $values, 'export_fields/' . absint( $field->id ) );
+			$form['fields'][ $f ]->personalDataErase  = (bool) rgars( $values, 'erase_fields/' . absint( $field->id ) );
 		}
 
+		// Exporting and Erasing: Custom Items
+		$custom_items = self::get_custom_items( $form );
+		if ( ! empty( $custom_items ) ) {
+			foreach ( $custom_items as $custom_item => $custom_item_meta ) {
+				$form['personalData']['exportingAndErasing']['custom'][ $custom_item ] = array(
+					'export' => (bool) rgars( $values, 'export_fields/' . $custom_item ),
+					'erase'  => (bool) rgars( $values, 'erase_fields/' . $custom_item ),
+				);
+			}
+		}
 
-		$form_personal_data_settings['retention'] = array(
-			'policy'              => $retention_policy,
-			'retain_entries_days' => $retain_entries_days,
+		// Save form.
+		GFAPI::update_form( $form );
+
+		// Update cached form object.
+		self::$_form = $form;
+
+	}
+
+
+
+
+
+	// # SETTINGS RENDERER ---------------------------------------------------------------------------------------------
+
+	/**
+	 * Initializes the Settings renderer at the beginning of page load.
+	 */
+	public static function initialize_settings_renderer() {
+
+		// Get form object.
+		$form_id = absint( rgget( 'id' ) );
+		$form    = self::get_form( $form_id );
+
+		$renderer = new Settings(
+			array(
+				'header'         => array(
+					'icon'  => 'fa fa-lock',
+					'title' => esc_html__( 'Personal Data', 'gravityforms' ),
+				),
+				'fields'         => self::settings_fields( $form_id ),
+				'initial_values' => rgar( $form, 'personalData' ),
+				'save_callback'  => array( 'GF_Personal_Data', 'process_form_settings' ),
+				'after_fields'   => function() {
+					?>
+					<script>
+						jQuery( document ).ready( function ( $ ) {
+							$( '#gf_personal_data_export_all' ).change( function () {
+								var checked = $( this ).is( ':checked' );
+								$( '.gf_personal_data_cb_export' ).each( function() {
+									if ( ( ! $( this ).is( ':checked' ) && checked ) || ( $( this ).is( ':checked' ) && ! checked ) ) {
+										$( this ).trigger( 'click' );
+									}
+								} );
+							} );
+							$( '#gf_personal_data_erase_all' ).change( function () {
+								var checked = $( this ).is( ':checked' );
+								$( '.gf_personal_data_cb_erase' ).each( function() {
+									if ( ( ! $( this ).is( ':checked' ) && checked ) || ( $( this ).is( ':checked' ) && ! checked ) ) {
+										$( this ).trigger( 'click' );
+									}
+								} );
+							} );
+						} );
+					</script>
+					<?php
+				}
+			)
 		);
 
-		if ( ! isset( $form_personal_data_settings['exportingAndErasing'] ) ) {
-			$form_personal_data_settings['exportingAndErasing'] = array();
+		self::set_settings_renderer( $renderer );
+
+		// Process save callback.
+		if ( self::get_settings_renderer()->is_save_postback() ) {
+			self::get_settings_renderer()->process_postback();
 		}
 
-		$exporting_and_erasing = $form_personal_data_settings['exportingAndErasing'];
-
-		if ( ! isset( $exporting_and_erasing['columns'] ) ) {
-			$exporting_and_erasing['columns'] = array();
-		}
-
-		$exporting_and_erasing['enabled'] = (bool) rgpost( 'exporting_and_erasing_enabled' );
-
-		if ( ! $exporting_and_erasing['enabled'] ) {
-			$exporting_and_erasing['identificationField'] = '';
-		} else {
-			$exporting_and_erasing['identificationField'] = sanitize_text_field( rgpost( 'identification_field' ) );
-		}
-
-		$all_column_settings = $exporting_and_erasing['columns'];
-
-		foreach ( $columns as $key => $label ) {
-			$column_settings = array(
-				'export' => (bool) rgar( $posted_export_fields, $key ),
-				'erase'  => (bool) rgar( $posted_erase_fields, $key ),
-			);
-
-			$all_column_settings[ $key ] = $column_settings;
-		}
-
-		$exporting_and_erasing['columns'] = $all_column_settings;
-
-
-		/* @var GF_Field[] $fields */
-		$fields = $form['fields'];
-
-		foreach ( $fields as &$field ) {
-			$field->personalDataExport = (bool) rgar( $posted_export_fields, $field->id );
-			$field->personalDataErase  = (bool) rgar( $posted_erase_fields, $field->id );
-		}
-
-		$custom_items = self::get_custom_items( $form );
-
-		if ( ! empty( $custom_items ) ) {
-			$custom_items_settings = rgar( $exporting_and_erasing, 'custom' ) ? $exporting_and_erasing['custom'] : array();
-
-			foreach ( array_keys( $custom_items ) as $custom_item_key ) {
-				$custom_item_settings = array(
-					'export' => (bool) rgar( $posted_export_fields, $custom_item_key ),
-					'erase'  => (bool) rgar( $posted_erase_fields, $custom_item_key ),
-				);
-
-				$custom_items_settings[ $custom_item_key ] = $custom_item_settings;
-			}
-
-			$exporting_and_erasing['custom'] = $custom_items_settings;
-		}
-
-		$form_personal_data_settings['exportingAndErasing'] = $exporting_and_erasing;
-
-		$form['personalData'] = $form_personal_data_settings;
-
-		GFAPI::update_form( $form );
-		self::$_form = $form;
-		?>
-		<div class="updated below-h2" id="after_update_dialog">
-			<p>
-				<strong><?php _e( 'Personal data settings updated successfully.', 'gravityforms' ); ?></strong>
-			</p>
-		</div>
-		<?php
 	}
+
+	/**
+	 * Gets the current instance of Settings handling settings rendering.
+	 *
+	 * @since 2.5
+	 *
+	 * @return false|\Gravity_Forms\Gravity_Forms\Settings
+	 */
+	private static function get_settings_renderer() {
+
+		return self::$_settings_renderer;
+
+	}
+
+	/**
+	 * Sets the current instance of Settings handling settings rendering.
+	 *
+	 * @since 2.5
+	 *
+	 * @param \Gravity_Forms\Gravity_Forms\Settings\Settings $renderer Settings renderer.
+	 *
+	 * @return bool|WP_Error
+	 */
+	private static function set_settings_renderer( $renderer ) {
+
+		// Ensure renderer is an instance of Settings
+		if ( ! is_a( $renderer, 'Gravity_Forms\Gravity_Forms\Settings\Settings' ) ) {
+			return new WP_Error( 'Renderer must be an instance of Gravity_Forms\Gravity_Forms\Settings\Settings.' );
+		}
+
+		self::$_settings_renderer = $renderer;
+
+		return true;
+
+	}
+
+
+
+
 
 	/**
 	 * Returns the form array for use in the form settings.
@@ -688,7 +768,7 @@ class GF_Personal_Data {
 	public static function get_forms() {
 
 		if ( is_null( self::$_forms ) ) {
-			$form_ids = GFFormsModel::get_form_ids();
+			$form_ids = GFFormsModel::get_form_ids( null );
 
 			if ( empty( $form_ids ) ) {
 				return array(
@@ -720,16 +800,18 @@ class GF_Personal_Data {
 	 * @return array
 	 */
 	public static function get_entries( $email_address, $page = 1, $limit = 50 ) {
-
+	
+		self::log_debug( __METHOD__ . "(): Getting entries for {$email_address}" );
+	
 		$user = get_user_by( 'email', $email_address );
 
 		$forms = self::get_forms();
 
-		$form_ids = array();
-
-		$query = new GF_Query();
-
-		$conditions = array();
+		$batches = array();
+		$batch   = array(
+			'form_ids'   => array(),
+			'conditions' => array(),
+		);
 
 		foreach ( $forms as $form ) {
 
@@ -737,7 +819,7 @@ class GF_Personal_Data {
 				continue;
 			}
 
-			$form_ids[] = $form['id'];
+			$batch['form_ids'][] = $form['id'];
 
 			$identification_field = rgars( $form, 'personalData/exportingAndErasing/identificationField' );
 
@@ -745,8 +827,8 @@ class GF_Personal_Data {
 
 			if ( $field && $field->get_input_type() == 'email' ) {
 
-				$conditions[] = new GF_Query_Condition(
-					new GF_Query_Column( $identification_field, $form['id'] ),
+				$batch['conditions'][] = new GF_Query_Condition(
+					new GF_Query_Column( $identification_field, intval( $form['id'] ) ),
 					GF_Query_Condition::EQ,
 					new GF_Query_Literal( $email_address )
 				);
@@ -761,23 +843,58 @@ class GF_Personal_Data {
 					continue;
 				}
 
-				$conditions[] = new GF_Query_Condition(
-					new GF_Query_Column( $identification_field, $form['id'] ),
+				$batch['conditions'][] = new GF_Query_Condition(
+					new GF_Query_Column( $identification_field, intval( $form['id'] ) ),
 					GF_Query_Condition::EQ,
 					new GF_Query_Literal( $user->ID )
 				);
 			}
+
+			if ( count( $batch['form_ids'] ) >= self::MAX_FORMS_PER_QUERY ) {
+				$batches[] = $batch;
+				$batch     = array(
+					'form_ids'   => array(),
+					'conditions' => array(),
+				);
+			}
 		}
 
-		if ( empty( $conditions ) ) {
+		if ( ! empty( $batch['form_ids'] ) ) {
+			$batches[] = $batch;
+		}
+
+		$entries = array();
+
+		foreach ( $batches as $query_batch ) {
+			if ( empty( $query_batch['conditions'] ) ) {
+				continue;
+			}
+
+			$all_conditions = call_user_func_array( array( 'GF_Query_Condition', '_or' ), $query_batch['conditions'] );
+
+			$query = new GF_Query();
+
+			$batch_entries = $query->from( $query_batch['form_ids'] )->where( $all_conditions )->get();
+
+			if ( ! empty( $batch_entries ) ) {
+				$entries = array_merge( $entries, $batch_entries );
+			}
+		}
+
+		if ( empty( $entries ) ) {
 			return array();
 		}
 
-		$all_conditions = call_user_func_array( array( 'GF_Query_Condition', '_or' ), $conditions );
+		usort(
+			$entries,
+			function ( $a, $b ) {
+				return (int) rgar( $a, 'id' ) - (int) rgar( $b, 'id' );
+			}
+		);
 
-		$entries = $query->from( $form_ids )->where( $all_conditions )->limit( $limit )->page( $page )->get();
+		$offset = max( 0, ( $page - 1 ) * $limit );
 
-		return $entries;
+		return array_slice( $entries, $offset, $limit );
 	}
 
 	/**
@@ -791,6 +908,8 @@ class GF_Personal_Data {
 	 * @return array
 	 */
 	public static function data_exporter( $email_address, $page = 1 ) {
+
+		self::log_debug( __METHOD__ . "(): Running data exporter for {$email_address}" );
 
 		$export_items = array(
 			'done' => true,
@@ -813,6 +932,8 @@ class GF_Personal_Data {
 		$entries = self::get_entries( $email_address, $page, $limit );
 
 		if ( empty( $entries ) ) {
+			self::log_debug( __METHOD__ . "(): No entries found for {$email_address}" );
+
 			return $export_items;
 		}
 
@@ -849,7 +970,7 @@ class GF_Personal_Data {
 					$value  = GFFormsModel::get_lead_field_value( $entry, $field );
 					$data[] = array(
 						'name'  => $field->get_field_label( false, $value ),
-						'value' => $field->get_value_entry_detail( $value, rgar( $entry, 'currency' ), true, 'text' ),
+						'value' => $field->get_value_entry_detail( $value, $entry, true, 'text' ),
 					);
 				}
 			}
@@ -942,7 +1063,7 @@ class GF_Personal_Data {
 					$value  = GFFormsModel::get_lead_field_value( $entry, $field );
 					$data[] = array(
 						'name'  => $field->get_field_label( false, $value ),
-						'value' => $field->get_value_entry_detail( $value, rgar( $entry, 'currency' ), true, 'text' ),
+						'value' => $field->get_value_entry_detail( $value, $entry, true, 'text' ),
 					);
 				}
 			}
@@ -972,13 +1093,16 @@ class GF_Personal_Data {
 	 */
 	public static function data_eraser( $email_address, $page = 1 ) {
 
+		self::log_debug( __METHOD__ . "(): Running data eraser for {$email_address}" );
+
 		$limit = 50;
 
 		$items_removed = $page == 1 ? self::erase_draft_submissions_data( $email_address ) : false;
 
 		$forms = self::get_forms();
 
-		$entries = self::get_entries( $email_address, $page, $limit );
+		// Always use page 1 because entries are erased at every page and won't be returned from the query. Page 1 will always have a new set of entries.
+		$entries = self::get_entries( $email_address, 1, $limit );
 
 		foreach ( $entries as $entry ) {
 
@@ -1008,6 +1132,9 @@ class GF_Personal_Data {
 
 					if ( $input_type == 'fileupload' ) {
 						GFFormsModel::delete_files( $entry['id'] );
+
+						self::log_debug( __METHOD__ . "(): Deleted files for entry #{$entry['id']}" );
+
 						GFAPI::update_entry_field( $entry['id'], $field->id, '' );
 						continue;
 					}
@@ -1020,6 +1147,9 @@ class GF_Personal_Data {
 
 					if ( is_array( $value ) ) {
 						self::erase_field_values( $value, $entry['id'], $field->id );
+
+						self::log_debug( __METHOD__ . "(): Erased field value for entry #{$entry['id']}, field id {$field->id}" );
+
 						$items_removed = true;
 					} else {
 						switch ( $input_type ) {
@@ -1041,6 +1171,9 @@ class GF_Personal_Data {
 								$anonymous = '';
 						}
 						GFAPI::update_entry_field( $entry['id'], $field->id, $anonymous );
+
+						self::log_debug( __METHOD__ . "(): Anonymized field value for entry #{$entry['id']}, field id {$field->id}" );
+
 						$items_removed = true;
 					}
 				}
@@ -1105,9 +1238,13 @@ class GF_Personal_Data {
 	 */
 	public static function get_draft_submissions( $email_address ) {
 
+		self::log_debug( __METHOD__ . '(): Getting Save and Continue forms' );
+
 		$draft_submissions = GFFormsModel::get_draft_submissions();
 
 		if ( empty( $draft_submissions ) ) {
+			self::log_debug( __METHOD__ . '(): No Save and Continue forms found' );
+
 			return array();
 		}
 
@@ -1157,6 +1294,9 @@ class GF_Personal_Data {
 	 * @return bool
 	 */
 	public static function erase_draft_submissions_data( $email_address ) {
+
+		self::log_debug( __METHOD__ . "(): Erasing Save and Continue data for {$email_address}" );
+
 		$items_removed = false;
 
 		$forms = self::get_forms();
@@ -1251,6 +1391,8 @@ class GF_Personal_Data {
 					if ( rgars( $custom_settings, 'erase' ) && isset( $custom_item_details['eraser_callback'] ) && is_callable( $custom_item_details['eraser_callback'] ) ) {
 						call_user_func( $custom_item_details['eraser_callback'], $form, $entry );
 						$items_removed = true;
+
+						self::log_debug( __METHOD__ . "(): Erased data for custom item {$custom_item_key}" );
 					}
 				}
 			}
@@ -1261,6 +1403,8 @@ class GF_Personal_Data {
 				$submission_json                = json_encode( $submission );
 				GFFormsModel::update_draft_submission( $resume_token, $form, $date_created, $draft_entry['ip'], $draft_entry['source_url'], $submission_json );
 				$items_removed = true;
+
+				self::log_debug( __METHOD__ . '(): Erased data for Save and Continue token ending with ' . substr( $resume_token, -8 ) );
 			}
 		}
 
@@ -1275,7 +1419,7 @@ class GF_Personal_Data {
 	 */
 	public static function cron_task() {
 
-		self::log_debug( __METHOD__ . '(): starting personal data cron task' );
+		self::log_debug( __METHOD__ . '(): Starting personal data cron task' );
 
 		$forms = self::get_forms();
 
@@ -1348,10 +1492,12 @@ class GF_Personal_Data {
 
 			$entry_ids = $query->from( $trash_form_ids )->where( $all_trash_conditions )->get_ids();
 
-			self::log_debug( __METHOD__ . '(): trashing entries: ' . join( ', ', $entry_ids ) );
+			self::log_debug( __METHOD__ . '(): Trashing entries: ' . join( ', ', $entry_ids ) );
 
 			foreach ( $entry_ids as $entry_id ) {
 				GFAPI::update_entry_property( $entry_id, 'status', 'trash' );
+
+				self::log_debug( __METHOD__ . "(): Moved entry #{$entry_id} to Trash" );
 			}
 		}
 
@@ -1363,7 +1509,7 @@ class GF_Personal_Data {
 
 			$entry_ids = $query->from( $delete_form_ids )->where( $all_delete_conditions )->get_ids();
 
-			self::log_debug( __METHOD__ . '(): deleting entries: ' . join( ', ', $entry_ids ) );
+			self::log_debug( __METHOD__ . '(): Deleting entries: ' . join( ', ', $entry_ids ) );
 
 			/**
 			 * Allows the array of entry IDs to be modified before automatically deleting according to the
@@ -1377,10 +1523,12 @@ class GF_Personal_Data {
 
 			foreach ( $entry_ids as $entry_id ) {
 				GFAPI::delete_entry( $entry_id );
+
+				self::log_debug( __METHOD__ . "(): Deleted entry #{$entry_id}" );
 			}
 		}
 
-		self::log_debug( __METHOD__ . '(): done' );
+		self::log_debug( __METHOD__ . '(): Done' );
 
 	}
 

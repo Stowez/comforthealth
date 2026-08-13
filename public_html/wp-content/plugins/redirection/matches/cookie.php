@@ -1,7 +1,10 @@
 <?php
 
-include_once dirname( __FILE__ ) . '/http-header.php';
+require_once __DIR__ . '/http-header.php';
 
+/**
+ * Check that a cookie value exists
+ */
 class Cookie_Match extends Header_Match {
 	public function name() {
 		return __( 'URL and cookie', 'redirection' );
@@ -10,7 +13,12 @@ class Cookie_Match extends Header_Match {
 	public function is_match( $url ) {
 		if ( $this->regex ) {
 			$regex = new Red_Regex( $this->value, true );
-			return $regex->is_match( Redirection_Request::get_cookie( $this->name ) );
+			$cookie = Redirection_Request::get_cookie( $this->name );
+			if ( $cookie === false ) {
+				return false;
+			}
+
+			return $regex->is_match( $cookie );
 		}
 
 		return Redirection_Request::get_cookie( $this->name ) === $this->value;

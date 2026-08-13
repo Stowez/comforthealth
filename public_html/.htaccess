@@ -1,3 +1,20 @@
+<Files xmlrpc.php>
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+
+
+Order Allow,Deny
+Deny from 15.134.203.163
+Deny from 175.176.2.243
+Deny from 13.232.107.62
+Deny from 175.176.2.227
+Deny from 175.176.2.0/24
+Deny from 146.190.86.18
+Allow from all
+
+
 # BEGIN WordPress
 <IfModule mod_rewrite.c>
 RewriteEngine On
@@ -10,13 +27,42 @@ RewriteRule . /index.php [L]
 
 # END WordPress
 <IfModule pagespeed_module>
-    ModPagespeed on
+    ModPagespeed off
     ModPagespeedDisallow "*/wpgmaps.js"
    ModPagespeedDisallow "*/contact-us/*" 
   ModPagespeedDisallow "*/video-call-physiotherapy/*"
+ModPagespeedDisallow "*/custom.js"
 </IfModule>
 
 
 
 Redirect 301 /what-we-offer/physio-services/physiotherapy /physiotherapy/
 Redirect 301 /what-we-offer/physio-services/physiotherapy/ /physiotherapy/
+
+<Files xmlrpc.php>
+    Order Deny,Allow
+    Deny from all
+</Files>
+
+
+# Wordfence WAF
+<IfModule mod_php5.c>
+	php_value auto_prepend_file '/srv/comforthealth/public_html/wordfence-waf.php'
+</IfModule>
+<IfModule mod_php7.c>
+	php_value auto_prepend_file '/srv/comforthealth/public_html/wordfence-waf.php'
+</IfModule>
+<IfModule mod_php.c>
+	php_value auto_prepend_file '/srv/comforthealth/public_html/wordfence-waf.php'
+</IfModule>
+<Files ".user.ini">
+<IfModule mod_authz_core.c>
+	Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+	Order deny,allow
+	Deny from all
+</IfModule>
+</Files>
+
+# END Wordfence WAF

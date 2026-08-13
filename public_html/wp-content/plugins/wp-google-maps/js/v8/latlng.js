@@ -77,6 +77,14 @@ jQuery(function($) {
 		return true;
 	}
 	
+	WPGMZA.LatLng.isLatLngString = function(str)
+	{
+		if(typeof str != "string")
+			return false;
+		
+		return str.match(WPGMZA.LatLng.REGEXP) ? true : false;
+	}
+	
 	/**
 	 * The latitude, guaranteed to be a number
 	 * @property lat
@@ -87,7 +95,7 @@ jQuery(function($) {
 			return this._lat;
 		},
 		set: function(val) {
-			if(!$.isNumeric(val))
+			if(!WPGMZA.isNumeric(val))
 				throw new Error("Latitude must be numeric");
 			this._lat = parseFloat( val );
 		}
@@ -103,11 +111,24 @@ jQuery(function($) {
 			return this._lng;
 		},
 		set: function(val) {
-			if(!$.isNumeric(val))
+			if(!WPGMZA.isNumeric(val))
 				throw new Error("Longitude must be numeric");
 			this._lng = parseFloat( val );
 		}
 	});
+	
+	WPGMZA.LatLng.fromString = function(string)
+	{
+		if(!WPGMZA.LatLng.isLatLngString(string))
+			throw new Error("Not a valid latlng string");
+		
+		var m = string.match(WPGMZA.LatLng.REGEXP);
+		
+		return new WPGMZA.LatLng({
+			lat: parseFloat(m[1]),
+			lng: parseFloat(m[3])
+		});
+	}
 	
 	/**
 	 * Returns this latitude and longitude as a string
@@ -181,6 +202,25 @@ jQuery(function($) {
 			googleLatLng.lat(),
 			googleLatLng.lng()
 		);
+	}
+	
+	WPGMZA.LatLng.toGoogleLatLngArray = function(arr)
+	{
+		var result = [];
+		
+		arr.forEach(function(nativeLatLng) {
+			
+			if(! (nativeLatLng instanceof WPGMZA.LatLng || ("lat" in nativeLatLng && "lng" in nativeLatLng)) )
+				throw new Error("Unexpected input");
+			
+			result.push(new google.maps.LatLng({
+				lat: parseFloat(nativeLatLng.lat),
+				lng: parseFloat(nativeLatLng.lng)
+			}));
+			
+		});
+		
+		return result;
 	}
 	
 	/**

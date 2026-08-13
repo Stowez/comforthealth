@@ -24,6 +24,24 @@ class GF_Field_Consent extends GF_Field {
 	public $type = 'consent';
 
 	/**
+	 * Whether there can be more than one of this field type per form.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @var bool
+	 */
+	public $duplicatable = true;
+
+	/**
+	 * Whether the field can be used in a repeater. Consent field is currently not supported in repeaters.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @var bool
+	 */
+	public $repeatable = false;
+
+	/**
 	 * Checked indicator URL.
 	 *
 	 * @since 2.4
@@ -40,6 +58,15 @@ class GF_Field_Consent extends GF_Field {
 	 * @var string
 	 */
 	public $checked_indicator_markup = '';
+
+	/**
+	 * Indicates if this field supports state validation.
+	 *
+	 * @since 2.5.11
+	 *
+	 * @var bool
+	 */
+	protected $_supports_state_validation = true;
 
 	/**
 	 * GF_Field_Consent constructor.
@@ -67,7 +94,7 @@ class GF_Field_Consent extends GF_Field {
 		 *
 		 * @param string $tag Image tag.
 		 */
-		$this->checked_indicator_markup = apply_filters( 'gform_consent_checked_indicator_markup', '<img src="' . esc_url( $this->checked_indicator_url ) . '" />' );
+		$this->checked_indicator_markup = apply_filters( 'gform_consent_checked_indicator_markup', '<img src="' . esc_url( $this->checked_indicator_url ) . '" alt="" />' );
 	}
 
 	/**
@@ -79,6 +106,30 @@ class GF_Field_Consent extends GF_Field {
 	 */
 	public function get_form_editor_field_title() {
 		return esc_attr__( 'Consent', 'gravityforms' );
+	}
+
+	/**
+	 * Returns the field's form editor description.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function get_form_editor_field_description() {
+		return esc_attr__( 'Offers a “yes/no” consent checkbox and a detailed description of what is being consented to.', 'gravityforms' );
+	}
+
+	/**
+	 * Returns the field's form editor icon.
+	 *
+	 * This could be an icon url or a gform-icon class.
+	 *
+	 * @since 2.5
+	 *
+	 * @return string
+	 */
+	public function get_form_editor_field_icon() {
+		return 'gform-icon--consent';
 	}
 
 	/**
@@ -131,6 +182,25 @@ class GF_Field_Consent extends GF_Field {
 	}
 
 	/**
+	 * Returns the HTML tag for the field container.
+	 *
+	 * @since 2.5
+	 *
+	 * @param array $form The current Form object.
+	 *
+	 * @return string
+	 */
+	public function get_field_container_tag( $form ) {
+
+		if ( GFCommon::is_legacy_markup_enabled( $form ) ) {
+			return parent::get_field_container_tag( $form );
+		}
+
+		return 'fieldset';
+
+	}
+
+	/**
 	 * Returns the field inner markup.
 	 *
 	 * @since 2.4
@@ -156,8 +226,8 @@ class GF_Field_Consent extends GF_Field {
 
 		$target_input_id       = parent::get_first_input_id( $form );
 		$for_attribute         = empty( $target_input_id ) ? '' : "for='{$target_input_id}'";
-		$label_class_attribute = 'class="gfield_consent_label"';
-		$required_div          = ( $this->labelPlacement === 'hidden_label' && ( $is_admin || $this->isRequired ) ) ? sprintf( "<span class='gfield_required'>%s</span>", $this->isRequired ? '*' : '' ) : '';
+		$label_class_attribute = 'class="gform-field-label gform-field-label--type-inline gfield_consent_label"';
+		$required_div          = ( $this->labelPlacement === 'hidden_label' && $this->isRequired && ! GFCommon::is_entry_detail_edit() ) ? $this->get_required_indicator() : '';
 
 		if ( $is_admin && ! GFCommon::is_entry_detail_edit() ) {
 			$checkbox_label = ! is_array( $value ) || empty( $value[ $id . '.2' ] ) ? $this->checkboxLabel : $value[ $id . '.2' ];
@@ -168,23 +238,24 @@ class GF_Field_Consent extends GF_Field {
 			$revision_id    = GFFormsModel::get_latest_form_revisions_id( $form['id'] );
 			// We compare if the description text from different revisions has been changed.
 			$current_description   = $this->get_field_description_from_revision( $revision_id );
-			$submitted_description = $this->get_field_description_from_revision( $value[ $id . '.3' ] );
+			$submitted_revision_id = ( is_array( $value ) && isset( $value[ $id . '.3' ] ) ) ? $value[ $id . '.3' ] : $revision_id;
+			$submitted_description = $this->get_field_description_from_revision( $submitted_revision_id );
 
-			$value = ! is_array( $value ) || empty( $value[ $id . '.1' ] ) || ( $checkbox_label !== $value[ $id . '.2' ] ) || ( $current_description !== $submitted_description ) ? '0' : esc_attr( $value[ $id . '.1' ] );
+			$submitted_label = ( is_array( $value ) && isset( $value[ $id . '.2' ] ) ) ? $value[ $id . '.2' ] : '';
+			$value = ! is_array( $value ) || empty( $value[ $id . '.1' ] ) || ( $checkbox_label !== $submitted_label ) || ( $current_description !== $submitted_description ) ? '0' : esc_attr( $value[ $id . '.1' ] );
 		}
 		$checked = $is_form_editor ? '' : checked( '1', $value, false );
 
-		$aria_describedby  = '';
-		$description       = $is_entry_detail ? $this->get_field_description_from_revision( $revision_id ) : $this->description;
-		if ( ! empty( $description ) ) {
-			$aria_describedby = "aria-describedby='gfield_consent_description_{$form['id']}_{$this->id}'";
-		}
+		$description           = $is_entry_detail ? $this->get_field_description_from_revision( $revision_id ) : $this->description;
+		$extra_describedby_ids = empty( $description ) ? array() : array( "gfield_consent_description_{$form['id']}_{$this->id}" );
+		$aria_describedby      = $this->get_aria_describedby( $extra_describedby_ids );
 
-		$input  = "<input name='input_{$id}.1' id='{$target_input_id}' type='{$html_input_type}' value='1' {$tabindex} {$aria_describedby} {$required_attribute} {$invalid_attribute} {$disabled_text} {$checked} /> <label {$label_class_attribute} {$for_attribute} >{$checkbox_label}</label>{$required_div}";
+		$input  = "<input name='input_{$id}.1' id='{$target_input_id}' type='{$html_input_type}' value='1' {$tabindex} {$aria_describedby} {$required_attribute} {$invalid_attribute} {$disabled_text} {$checked} /> <label {$label_class_attribute} {$for_attribute} ><span class='gform-field-label__text'>{$checkbox_label}</span>{$required_div}</label>";
 		$input .= "<input type='hidden' name='input_{$id}.2' value='" . esc_attr( $checkbox_label ) . "' class='gform_hidden' />";
 		$input .= "<input type='hidden' name='input_{$id}.3' value='" . esc_attr( $revision_id ) . "' class='gform_hidden' />";
 
-		if ( $is_entry_detail ) {
+		$is_inside_repeater = $this->get_context_property( 'itemIndex' ) !== null;
+		if ( $is_entry_detail && ( ! $this->is_entry_detail_edit() || ! $is_inside_repeater ) ) {
 			$input .= $this->get_description( $this->get_field_description_from_revision( $revision_id ), '' );
 		}
 
@@ -222,57 +293,78 @@ class GF_Field_Consent extends GF_Field {
 
 			$css_class .= ' gfield_consent_description';
 
-			return "<div class='$css_class' id='$id'>" . nl2br( $description ) . '</div>';
+			return "<div class='$css_class' id='$id'><div class='gfield_consent_description_text' tabindex='0'>" . nl2br( $description ) . '</div></div>';
 		}
 
 		return parent::get_description( $description, $css_class );
 	}
 
 	/**
-	 * Return the result (bool) by setting $this->failed_validation.
-	 * Return the validation message (string) by setting $this->validation_message.
+	 * If a field has a description, the aria-describedby attribute for the input field is returned.
+	 * This method is specific to the consent field since the consent description has a different ID pattern.
 	 *
-	 * @since 2.4
+	 * @since 2.6.8
 	 *
-	 * @param string|array $value The field value from get_value_submission().
-	 * @param array        $form  The Form Object currently being processed.
+	 * @param array|string $extra_ids Any extra ids that should be added to the describedby attribute.
+	 *
+	 * @return string
 	 */
-	public function validate( $value, $form ) {
-		$consent = rgget( $this->id . '.1', $value );
+	public function get_aria_describedby( $extra_ids = array() ) {
 
-		if ( $this->isRequired && rgblank( $consent ) ) {
-			$this->failed_validation  = true;
-			$this->validation_message = empty( $this->errorMessage ) ? esc_html__( 'This field is required.', 'gravityforms' ) : $this->errorMessage;
+		$describedby_ids = is_array( $extra_ids ) ? $extra_ids : explode( ' ', $extra_ids );
+
+		if ( $this->failed_validation ) {
+			$describedby_ids[] = "validation_message_{$this->formId}_{$this->id}";
 		}
+
+		if ( empty( $describedby_ids ) ) {
+			return '';
+		}
+
+		return 'aria-describedby="' . implode( ' ', $describedby_ids ) . '"';
+
+	}
+
+	/**
+	 * Used when determining if the field has failed required validation.
+	 *
+	 * The consent field has three inputs; only the checkbox is required.
+	 *
+	 * @since 2.7.5
+	 *
+	 * @param int $form_id The ID of the form currently being processed.
+	 *
+	 * @return bool
+	 */
+	public function is_value_submission_empty( $form_id ) {
+		return rgblank( rgpost( 'input_' . $this->id . '_1' ) );
 	}
 
 	/**
 	 * Sanitize and format the value before it is saved to the Entry Object.
-	 * We also add the value of inputs .2 and .3 here since they are not displayed in the form.
 	 *
-	 * @since 2.4
+	 * @since 3.0.0
 	 *
-	 * @param string $value      The value to be saved.
-	 * @param array  $form       The Form Object currently being processed.
-	 * @param string $input_name The input name used when accessing the $_POST.
-	 * @param int    $lead_id    The ID of the Entry currently being processed.
-	 * @param array  $lead       The Entry Object currently being processed.
+	 * @param string $value          The value to be saved.
+	 * @param array  $form           The Form object currently being processed.
+	 * @param string $input_name     The input name used when accessing the $_POST.
+	 * @param int    $entry_id       The ID of the entry currently being processed.
+	 * @param array  $entry          The entry currently being processed.
+	 * @param string $repeater_index The repeater item index if the field is inside a repeater (e.g., '_0', '_1', '_0_1').
 	 *
-	 * @return array|string The safe value.
+	 * @return array|string The sanitized and formatted input value to be saved.
 	 */
-	public function get_value_save_entry( $value, $form, $input_name, $lead_id, $lead ) {
-		list( $input, $field_id, $input_id ) = rgexplode( '_', $input_name, 3 );
+	public function get_value_save_input( $value, $form, $input_name, $entry_id, $entry, $repeater_index = '' ) {
+		$parts    = explode( '_', $input_name );
+		$field_id = isset( $parts[1] ) ? $parts[1] : '';
+		$input_id = isset( $parts[2] ) ? $parts[2] : '';
 
-		switch ( $input_id ) {
-			case '1':
-				$value = ( ! empty( $value ) ) ? '1' : '';
-				break;
-			case '2':
-				$value = ( $lead[ $field_id . '.1' ] === '1' ) ? $value : '';
-				break;
-			case '3':
-				$value = ( $lead[ $field_id . '.1' ] === '1' ) ? $value : '';
-				break;
+		if ( $input_id == '1' ) {
+			$value = ( ! empty( $value ) ) ? '1' : '';
+		} else {
+			$checkbox_key  = $field_id . '.1' . $repeater_index;
+			$consent_value = isset( $entry[ $checkbox_key ] ) ? $entry[ $checkbox_key ] : '';
+			$value         = ( $consent_value === '1' ) ? $value : '';
 		}
 
 		return $value;
@@ -333,7 +425,7 @@ class GF_Field_Consent extends GF_Field {
 		switch ( $input_id ) {
 			case '1':
 				$value  = ! rgblank( $value ) ? $this->checked_indicator_markup : '';
-				$value .= ! rgblank( $value ) ? ' ' . trim( $entry[ $this->id . '.2' ] ) : '';
+				$value .= ! rgblank( $value ) ? ' ' . wp_kses( trim( $entry[ $this->id . '.2' ] ), wp_kses_allowed_html( 'data' ) ) : '';
 				break;
 		}
 
@@ -344,32 +436,35 @@ class GF_Field_Consent extends GF_Field {
 	 * Format the entry value for display on the entry detail page and for the {all_fields} merge tag.
 	 *
 	 * @since 2.4
+	 * @since 2.9.29 Changed the second parameter $currency (string) to $entry (array).
 	 *
 	 * @param string|array $value    The field value.
-	 * @param string       $currency The entry currency code.
+	 * @param array        $entry    The entry.
 	 * @param bool|false   $use_text When processing choice based fields should the choice text be returned instead of the value.
 	 * @param string       $format   The format requested for the location the merge is being used. Possible values: html, text or url.
 	 * @param string       $media    The location where the value will be displayed. Possible values: screen or email.
 	 *
 	 * @return string
 	 */
-	public function get_value_entry_detail( $value, $currency = '', $use_text = false, $format = 'html', $media = 'screen' ) {
+	public function get_value_entry_detail( $value, $entry = array(), $use_text = false, $format = 'html', $media = 'screen' ) {
 		$return = '';
 
 		if ( is_array( $value ) && ! empty( $value ) ) {
-			$consent     = trim( $value[ $this->id . '.1' ] );
-			$text        = trim( $value[ $this->id . '.2' ] );
-			$revision_id = absint( trim( $value[ $this->id . '.3' ] ) );
+			$consent     = isset( $value[ $this->id . '.1' ] ) ? trim( $value[ $this->id . '.1' ] ) : '';
+			$text        = isset( $value[ $this->id . '.2' ] ) ? trim( $value[ $this->id . '.2' ] ) : '';
+			$revision_id = isset( $value[ $this->id . '.3' ] ) ? absint( trim( $value[ $this->id . '.3' ] ) ) : 0;
 
 			if ( ! rgblank( $consent ) ) {
 				$return  = $this->checked_indicator_markup;
-				$return .= ' ' . $text;
+				$return .= ' ' . wp_kses( $text, wp_kses_allowed_html( 'data' ) );
 
-				// checking revisions.
-				$description = $this->get_field_description_from_revision( $revision_id );
+				if ( $media === 'screen' ) {
+					// checking revisions.
+					$description = $this->get_field_description_from_revision( $revision_id );
 
-				if ( ! empty( $description ) ) {
-					$return .= '<br /><div class="gfield_consent_description">' . nl2br( $description ) . '</div>';
+					if ( ! empty( $description ) ) {
+						$return .= '<br /><div class="gfield_consent_description">' . nl2br( $description ) . '</div>';
+					}
 				}
 			}
 		}
@@ -392,9 +487,13 @@ class GF_Field_Consent extends GF_Field {
 	 * @return string|array
 	 */
 	public function get_value_export( $entry, $input_id = '', $use_text = false, $is_csv = false ) {
+		if ( empty( $input_id ) ) {
+			return '';
+		}
+
 		$value = parent::get_value_export( $entry, $input_id, $use_text, $is_csv );
 
-		list( $field_id, $input_id ) = explode( '.', $input_id );
+		list( $field_id, $input_id ) = rgexplode( '.', $input_id, 2 );
 
 		switch ( $input_id ) {
 			case '1':
@@ -488,18 +587,15 @@ class GF_Field_Consent extends GF_Field {
 	public function get_field_description_from_revision( $revision_id ) {
 		global $wpdb;
 		$revisions_table_name = GFFormsModel::get_form_revisions_table_name();
-		$display_meta         = $wpdb->get_var( $wpdb->prepare( "SELECT display_meta FROM $revisions_table_name WHERE form_id=%d AND id=%d", $this->formId, $revision_id ) );
+		$display_meta         = $wpdb->get_var( $wpdb->prepare( "SELECT display_meta FROM $revisions_table_name WHERE form_id=%d AND id=%d", $this->formId, $revision_id ) ); // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$value                = '';
 		$is_entry_detail = $this->is_entry_detail();
 
 		if ( ! empty( $display_meta ) ) {
 			$display_meta_array = json_decode( $display_meta, true );
-			foreach ( $display_meta_array['fields'] as $field ) {
-				if ( $field['id'] === $this->id ) {
-					$value = $field['description'];
-
-					break;
-				}
+			$field_data         = $this->find_nested_field_by_id( $display_meta_array['fields'], $this->id );
+			if ( $field_data ) {
+				$value = $field_data['description'];
 			}
 		} else {
 			$value = ( ! empty( $this->description ) ) ? $this->description : '';
@@ -510,6 +606,65 @@ class GF_Field_Consent extends GF_Field {
 		}
 
 		return $value;
+	}
+
+	/**
+	 * Recursively searches for a field by ID within a fields array, including nested fields inside repeaters.
+	 *
+	 * @since 3.0.0
+	 *
+	 * @param array $fields   Array of field data from form metadata.
+	 * @param int   $field_id The field ID to search for.
+	 *
+	 * @return array|null The field data array if found, null otherwise.
+	 */
+	private function find_nested_field_by_id( $fields, $field_id ) {
+		foreach ( $fields as $field ) {
+			if ( $field['id'] === $field_id ) {
+				return $field;
+			}
+
+			if ( isset( $field['fields'] ) && is_array( $field['fields'] ) ) {
+				$result = $this->find_nested_field_by_id( $field['fields'], $field_id );
+				if ( $result ) {
+					return $result;
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Indicates if state validation should be skipped if the submitted value is blank.
+	 *
+	 * Input value will be blank when the input is not checked.
+	 *
+	 * @since 3.0
+	 *
+	 * @return bool
+	 */
+	public function skip_state_validation_if_blank( $key ) {
+		return true;
+	}
+
+	/**
+	 * Prepares the value that will be hashed on form display as part of the state.
+	 *
+	 * @since 3.0
+	 *
+	 * @param string|array $value The default value.
+	 *
+	 * @return null|array
+	 */
+	public function get_values_for_state_hash( $value ) {
+		$id = $this->id;
+
+		return array(
+			"{$id}.1" => 1,
+			"{$id}.2" => $this->checkboxLabel,
+			"{$id}.3" => GFFormsModel::get_latest_form_revisions_id( $this->formId ),
+		);
 	}
 
 }

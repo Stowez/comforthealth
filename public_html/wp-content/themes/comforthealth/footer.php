@@ -16,15 +16,75 @@
 	</div>
 </div>
 */?>
-<div class="row with-gutter newsletter">
+
+<?php
+  $pageIdsToDisplayOn = get_field('newsletter_signup_pages', 'option');
+  $show_newsletter = is_singular('post') || is_archive('post') || is_home(); 
+  if ( $show_newsletter || is_page($pageIdsToDisplayOn) ) :?>
+    <section class="newsletter-section">
+      <div class="container">
+        <h2>Sign up to our newsletter</h2>
+        <p class="newsletter-subtitle">Stay up to date with the latest news and offers from Comfort Health.</p>
+
+        <form
+          class="js-cm-form newsletter-form"
+          id="subForm"
+          action="https://www.createsend.com/t/subscribeerror?description="
+          method="post"
+          data-id="92D4C54F0FEC16E5ADC2B1904DE9ED1A2A1875376A08FB6C45C7CA8B6D2A5C22AA327B59B2B1C274FF8F641FDDCEB6827AC85285568184B01DC36FC6E83C83E1"
+        >
+          <div class="form-field">
+            <label for="fieldName">Name</label>
+            <input
+              id="fieldName"
+              type="text"
+              maxlength="200"
+              name="cm-name"
+              placeholder="Joe Bloggs"
+              required
+            >
+          </div>
+
+          <div class="form-field">
+            <label for="fieldEmail">Email</label>
+            <input
+              autocomplete="email"
+              class="js-cm-email-input qa-input-email"
+              id="fieldEmail"
+              maxlength="200"
+              name="cm-thljidh-thljidh"
+              placeholder="joe.bloggs@example.com"
+              required
+              type="email"
+            >
+          </div>
+
+          <div class="form-field form-field--btn">
+            <label>&nbsp;</label>
+            <button type="submit">Subscribe</button>
+          </div>
+        </form>
+      </div>
+
+      <script
+        type="text/javascript"
+        src="https://js.createsend1.com/javascript/copypastesubscribeformlogic.js">
+      </script>
+    </section>
+    <?php endif; ?> 
+
+
+<?/*<div class="row with-gutter newsletter">
 	<div class="container">
 		<div class="col-12 col">
 			<div class="row">
 				<p>For the latest special offers and news about Comfort Health enter your email below.</p>
 				<? gravity_form(2, false, false, false, false, false, 10); ?>
+			</div>
+		</div>	
+	</div>
 </div>
-</div>	</div>
-</div>
+*/?>
 <div class="footerNav">
 	<div class="container">
 		<div class="row">
@@ -49,7 +109,7 @@
 </div>
 <footer class="sitefooter">
 	<div class="container content content--center">
-		<p>Comfort Health All Rights Reserved</p>
+		<p>Comfort Health All Rights Reserved </p>
 	</div>
 </footer>
 <script>window.twttr = (function(d, s, id) {
